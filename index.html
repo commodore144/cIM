@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>cIM — commodore. Instant Messenger</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ── Login Screen ─────────────────────────────────── -->
+<div id="login-screen">
+  <div class="cim-window" id="login-window">
+    <div class="titlebar">
+      <span class="titlebar-icon">💬</span>
+      <span class="titlebar-title"><span class="brand">c</span>IM — Sign On</span>
+    </div>
+    <div class="login-body">
+      <div class="cim-logo">
+        <span class="logo-icon">🟦</span>
+        <div class="logo-name">c<span class="logo-dot">.</span>IM</div>
+        <div class="logo-sub">commodore<span class="logo-dot">.</span> Instant Messenger</div>
+      </div>
+      <div class="field-group">
+        <label>SCREEN NAME</label>
+        <input class="cim-input" id="login-username" type="text" placeholder="your_name" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="field-group">
+        <label>PASSWORD</label>
+        <input class="cim-input" id="login-password" type="password" placeholder="••••••••" />
+      </div>
+      <div class="btn-row">
+        <button class="cim-btn" id="btn-login">SIGN ON</button>
+        <button class="cim-btn secondary" id="btn-show-register">NEW USER</button>
+      </div>
+      <div class="login-error" id="login-error"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Register Modal ───────────────────────────────── -->
+<div id="login-screen" style="display:none" id="register-screen">
+</div>
+
+<!-- ── Desktop ──────────────────────────────────────── -->
+<div id="desktop">
+
+  <!-- Buddy List -->
+  <div class="cim-window" id="buddy-list-window">
+    <div class="titlebar" id="buddy-titlebar">
+      <span class="titlebar-icon">💬</span>
+      <span class="titlebar-title"><span class="brand">c</span>IM</span>
+      <div class="titlebar-buttons">
+        <button class="win-btn" id="btn-open-rooms" title="Chat Rooms">⊞</button>
+        <button class="win-btn close" id="btn-signoff" title="Sign Off">✕</button>
+      </div>
+    </div>
+    <div class="buddy-list-header">
+      <div class="buddy-self">
+        <div class="status-dot online" id="self-status-dot"></div>
+        <span class="buddy-self-name" id="self-name">—</span>
+      </div>
+      <div class="away-preview" id="away-preview"></div>
+    </div>
+    <div class="buddy-toolbar">
+      <button class="tool-btn" id="btn-add-buddy">+ Buddy</button>
+      <button class="tool-btn" id="btn-set-away">Away Msg</button>
+    </div>
+    <div class="buddy-list-body" id="buddy-list-body">
+      <div style="padding:12px 10px; color:var(--text-dim); font-size:14px;">
+        No buddies yet.<br>Add someone to get started.
+      </div>
+    </div>
+  </div>
+
+  <!-- Away Message Dialog -->
+  <div class="cim-window" id="away-dialog">
+    <div class="titlebar purple" id="away-titlebar">
+      <span class="titlebar-icon">💤</span>
+      <span class="titlebar-title">Set Away Message</span>
+      <div class="titlebar-buttons">
+        <button class="win-btn close" id="btn-close-away">✕</button>
+      </div>
+    </div>
+    <div class="away-body">
+      <label>Away message (leave blank to clear)</label>
+      <textarea class="away-input" id="away-input" placeholder="brb grabbing snacks..."></textarea>
+      <div class="btn-row">
+        <button class="cim-btn" id="btn-save-away">SET AWAY</button>
+        <button class="cim-btn secondary" id="btn-clear-away">CLEAR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Buddy Dialog -->
+  <div class="cim-window" id="add-buddy-dialog">
+    <div class="titlebar" id="add-buddy-titlebar">
+      <span class="titlebar-icon">👤</span>
+      <span class="titlebar-title">Add a Buddy</span>
+      <div class="titlebar-buttons">
+        <button class="win-btn close" id="btn-close-add-buddy">✕</button>
+      </div>
+    </div>
+    <div class="add-buddy-body">
+      <label>Screen name</label>
+      <input class="cim-input" id="add-buddy-input" type="text" placeholder="their_name" autocomplete="off" />
+      <button class="cim-btn" id="btn-do-add-buddy">ADD BUDDY</button>
+      <div class="dialog-msg" id="add-buddy-msg"></div>
+    </div>
+  </div>
+
+  <!-- Rooms Window -->
+  <div class="cim-window" id="rooms-window">
+    <div class="titlebar purple" id="rooms-titlebar">
+      <span class="titlebar-icon">⊞</span>
+      <span class="titlebar-title">Chat Rooms</span>
+      <div class="titlebar-buttons">
+        <button class="win-btn close" id="btn-close-rooms">✕</button>
+      </div>
+    </div>
+    <div class="rooms-body">
+      <div id="rooms-list"></div>
+      <div class="room-create-row">
+        <input class="room-name-input" id="new-room-input" placeholder="new-room" />
+        <button class="cim-btn" style="flex:0;padding:4px 10px;font-size:14px" id="btn-create-room">CREATE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat windows injected here by JS -->
+
+</div>
+
+<!-- Taskbar -->
+<div id="taskbar">
+  <span class="taskbar-brand">c<span class="dot">.</span>IM</span>
+  <div class="taskbar-items" id="taskbar-items"></div>
+  <span class="taskbar-clock" id="taskbar-clock"></span>
+</div>
+
+<!-- Disconnect banner -->
+<div id="disconnect-banner">⚠ Disconnected from cIM server. Reconnecting...</div>
+
+<script src="app.js"></script>
+</body>
+</html>
