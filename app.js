@@ -8,6 +8,8 @@ let token = localStorage.getItem('cim_token') || null;
 let myUsername = localStorage.getItem('cim_username') || null;
 let ws = null;
 let wsReconnectTimer = null;
+let commMode = 'ws'; // or 'rest'
+let pollTimer = null;
 let buddies = {}; // username -> {online, status, away_message}
 let openChats = {}; // username -> {window el, unread}
 let openRooms = {}; // room name -> {window el}
@@ -35,7 +37,7 @@ function playTone(freq, duration, type = 'sine', vol = 0.15) {
     gain.connect(ctx.destination);
     osc.start();
     osc.stop(ctx.currentTime + duration);
-  } catch {}
+  } catch { }
 }
 
 function playDoorSound() {
@@ -165,6 +167,28 @@ function addTaskbarItem(label, winEl, active) {
   el('taskbar-items').appendChild(btn);
 }
 
+// ── Connection Mode Toggle ────────────────────────────────────────────────
+function setCommMode(mode) {
+  commMode = mode;
+  const ind = el('conn-indicator');
+  const txt = el('conn-mode-text');
+  if (mode === 'ws') {
+    ind.className = 'conn-indicator ws';
+    txt.textContent = 'WS';
+    if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
+    connectWS();
+  } else {
+    ind.className = 'conn-indicator rest';
+    txt.textContent = 'REST';
+    if (ws) { ws.close(); ws = null; }
+    startRESTPolling();
+  }
+}
+
+el('conn-mode-toggle').addEventListener('click', () => {
+  setCommMode(commMode === 'ws' ? 'rest' : 'ws');
+});
+
 // ── Login / Register ───────────────────────────────────────────────────────
 el('btn-login').addEventListener('click', doLogin);
 el('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
@@ -236,6 +260,7 @@ if (token && myUsername) {
 
 // ── WebSocket ──────────────────────────────────────────────────────────────
 function connectWS() {
+  if (commMode !== 'ws') return;
   if (ws) ws.close();
   const wsUrl = API.replace('https://', 'wss://').replace('http://', 'ws://');
   ws = new WebSocket(`${wsUrl}/ws?token=${token}`);
@@ -251,16 +276,73 @@ function connectWS() {
   };
 
   ws.onclose = () => {
+    if (commMode !== 'ws') return;
     el('disconnect-banner').classList.add('visible');
     wsReconnectTimer = setTimeout(connectWS, 3000);
+    // Auto-fallback after some time? Let's just let the user toggle or 
+    // we could count failures.
   };
 
-  ws.onerror = () => { ws.close(); };
+  ws.onerror = () => {
+    if (ws) ws.close();
+    // Fallback to REST?
+    console.log("WS Error, falling back to REST");
+    setCommMode('rest');
+  };
+}
+
+async function startRESTPolling() {
+  if (commMode !== 'rest') return;
+  try {
+    const data = await apiPost('/poll/connect', {}, true);
+    handleWSMessage(data); // Init packet
+    pollLoop();
+  } catch (e) {
+    console.error("Poll connect failed", e);
+    setTimeout(startRESTPolling, 5000);
+  }
+}
+
+async function pollLoop() {
+  if (commMode !== 'rest') return;
+  try {
+    const data = await apiGet('/poll/messages');
+    if (data.messages) {
+      data.messages.forEach(msg => handleWSMessage(msg));
+    }
+    el('disconnect-banner').classList.remove('visible');
+    pollLoop(); // Immediate next poll
+  } catch (e) {
+    el('disconnect-banner').classList.add('visible');
+    pollTimer = setTimeout(pollLoop, 3000);
+  }
 }
 
 function wsSend(msg) {
-  if (ws && ws.readyState === WebSocket.OPEN) {
+  if (commMode === 'ws' && ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(msg));
+  } else if (commMode === 'rest') {
+    handleRestSend(msg);
+  }
+}
+
+async function handleRestSend(msg) {
+  try {
+    if (msg.type === 'dm') {
+      await apiPost('/poll/dm', { to: msg.to, content: msg.content }, true);
+      appendDMMessage(msg.to, 'self', myUsername, msg.content);
+    } else if (msg.type === 'room_message') {
+      await apiPost('/poll/room/message', { room: msg.room, content: msg.content }, true);
+    } else if (msg.type === 'join_room') {
+      const data = await apiPost('/poll/room/join', { room: msg.room }, true);
+      handleWSMessage(data);
+    } else if (msg.type === 'leave_room') {
+      await apiPost('/poll/room/leave', { room: msg.room }, true);
+    } else if (msg.type === 'typing') {
+      await apiPost('/poll/typing', { to: msg.to }, true);
+    }
+  } catch (e) {
+    console.error("Rest send failed", e);
   }
 }
 
@@ -314,8 +396,8 @@ function handleWSMessage(msg) {
 function renderBuddyList() {
   const body = el('buddy-list-body');
   const online = Object.values(buddies).filter(b => b.online && b.status !== 'away');
-  const away   = Object.values(buddies).filter(b => b.online && b.status === 'away');
-  const offline= Object.values(buddies).filter(b => !b.online);
+  const away = Object.values(buddies).filter(b => b.online && b.status === 'away');
+  const offline = Object.values(buddies).filter(b => !b.online);
 
   body.innerHTML = '';
 
@@ -324,8 +406,8 @@ function renderBuddyList() {
     return;
   }
 
-  if (online.length)  renderBuddyGroup(body, `Online (${online.length})`, online, 'online');
-  if (away.length)    renderBuddyGroup(body, `Away (${away.length})`, away, 'away');
+  if (online.length) renderBuddyGroup(body, `Online (${online.length})`, online, 'online');
+  if (away.length) renderBuddyGroup(body, `Away (${away.length})`, away, 'away');
   if (offline.length) renderBuddyGroup(body, `Offline (${offline.length})`, offline, 'offline');
 
   updateTaskbar();
@@ -475,7 +557,7 @@ function openDMWindow(username) {
   document.getElementById(`input-${username}`).addEventListener('input', () => {
     wsSend({ type: 'typing', to: username });
     clearTimeout(typingTimer);
-    typingTimer = setTimeout(() => {}, 2000);
+    typingTimer = setTimeout(() => { }, 2000);
   });
 
   // Load DM history
@@ -492,7 +574,7 @@ async function loadDMHistory(username) {
         msg.sender, msg.content, msg.timestamp
       );
     });
-  } catch {}
+  } catch { }
 }
 
 function sendDM(username) {
@@ -617,7 +699,7 @@ async function loadRoomHistory(roomName) {
   try {
     const data = await apiGet(`/history/room/${roomName}`);
     data.messages.forEach(msg => appendRoomMessage(roomName, msg.sender, msg.content, msg.timestamp));
-  } catch {}
+  } catch { }
 }
 
 function sendRoomMsg(roomName) {
@@ -665,7 +747,7 @@ function handleRoomEvent(msg) {
 }
 
 function escapeHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 // ── Away Message ───────────────────────────────────────────────────────────
@@ -769,7 +851,7 @@ async function refreshRooms() {
       });
       list.appendChild(div);
     });
-  } catch {}
+  } catch { }
 }
 
 el('btn-create-room').addEventListener('click', async () => {
