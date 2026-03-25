@@ -4,7 +4,8 @@
 
 @font-face {
     font-family: 'RetroSans'; /*a name to be used later*/
-    src: url('/fonts/RetroSans.ttf'); /*URL to font*/
+    src: url('./fonts/RetroSans.ttf') format('truetype'); /*URL to font*/
+    font-style: normal;
 }
 
 
