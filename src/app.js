@@ -255,9 +255,12 @@ function enterDesktop() {
   setCommMode(savedMode);
 }
 
+const user = localStorage.getItem('cim_username');
+
 // Auto-login if token exists
 if (token && myUsername) {
   enterDesktop();
+  document.title = `cIM - ${user}`;
 }
 
 // ── WebSocket ──────────────────────────────────────────────────────────────
