@@ -4,9 +4,13 @@
 
 @font-face {
     font-family: 'RetroSans'; /*a name to be used later*/
+<<<<<<< HEAD
     src: url('fonts/RetroSans.ttf') format('truetype'); /*URL to font*/
     font-style: normal;
     font-weight: 2000
+=======
+    src: url('/fonts/RetroSans.ttf'); /*URL to font*/
+>>>>>>> parent of 109c0a9 (yay i sure love adding a dot)
 }
 
 
