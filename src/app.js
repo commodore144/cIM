@@ -213,7 +213,6 @@ async function doLogin() {
     myUsername = data.username;
     localStorage.setItem('cim_token', token);
     localStorage.setItem('cim_username', myUsername);
-    document.title = `cIM - ${myUsername}`
     enterDesktop();
   } catch (e) {
     el('login-error').textContent = e.message;
