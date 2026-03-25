@@ -250,7 +250,8 @@ function enterDesktop() {
   makeDraggable(el('rooms-window'), el('rooms-titlebar'));
 
   focusWindow(el('buddy-list-window'));
-  connectWS();
+  const savedMode = localStorage.getItem('cim_commmode') || 'ws';
+  setCommMode(savedMode);
 }
 
 // Auto-login if token exists
