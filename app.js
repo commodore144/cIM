@@ -875,3 +875,106 @@ el('btn-signoff').addEventListener('click', () => {
   if (ws) ws.close();
   location.reload();
 });
+
+// ── Start Menu ─────────────────────────────────────────────────────────────
+const startMenu = el('start-menu');
+
+el('start-btn').addEventListener('click', e => {
+  e.stopPropagation();
+  startMenu.classList.toggle('open');
+});
+
+document.addEventListener('click', () => startMenu.classList.remove('open'));
+startMenu.addEventListener('click', e => e.stopPropagation());
+
+function openStartMenuItem(fn) {
+  startMenu.classList.remove('open');
+  fn();
+}
+
+el('smenu-buddy-list').addEventListener('click', () => openStartMenuItem(() => {
+  el('buddy-list-window').style.display = 'block';
+  focusWindow(el('buddy-list-window'));
+}));
+
+el('smenu-rooms').addEventListener('click', () => openStartMenuItem(() => openRoomsList()));
+
+el('smenu-away').addEventListener('click', () => openStartMenuItem(() => {
+  el('away-dialog').style.display = 'block';
+  el('away-dialog').style.top = '80px';
+  el('away-dialog').style.left = '220px';
+  focusWindow(el('away-dialog'));
+}));
+
+el('smenu-add-buddy').addEventListener('click', () => openStartMenuItem(() => {
+  el('add-buddy-dialog').style.display = 'block';
+  el('add-buddy-dialog').style.top = '80px';
+  el('add-buddy-dialog').style.left = '220px';
+  el('add-buddy-msg').textContent = '';
+  el('add-buddy-input').value = '';
+  focusWindow(el('add-buddy-dialog'));
+}));
+
+el('smenu-about').addEventListener('click', () => openStartMenuItem(() => openAbout()));
+
+el('smenu-signoff').addEventListener('click', () => openStartMenuItem(() => {
+  if (!confirm('Sign off from cIM?')) return;
+  localStorage.removeItem('cim_token');
+  localStorage.removeItem('cim_username');
+  if (ws) ws.close();
+  location.reload();
+}));
+
+// ── About Dialog ───────────────────────────────────────────────────────────
+makeDraggableById = (winId, titlebarId) => {
+  const w = el(winId), h = el(titlebarId);
+  if (w && h) makeDraggable(w, h);
+};
+
+function openAbout() {
+  const about = el('about-dialog');
+  about.style.display = 'block';
+  about.style.top = '80px';
+  about.style.left = '50%';
+  about.style.transform = 'translateX(-50%)';
+  el('about-username').textContent = myUsername || '—';
+  focusWindow(about);
+  makeDraggable(about, el('about-titlebar'));
+}
+
+el('btn-close-about').addEventListener('click', () => { el('about-dialog').style.display = 'none'; });
+el('btn-close-about-ok').addEventListener('click', () => { el('about-dialog').style.display = 'none'; });
+
+// ── Rooms refresh button ────────────────────────────────────────────────────
+el('btn-refresh-rooms')?.addEventListener('click', refreshRooms);
+
+// update rooms render to show topic + count better
+const _origRefreshRooms = refreshRooms;
+// patch refreshRooms to use new room-entry-info layout
+window.refreshRooms = async function() {
+  try {
+    const data = await apiGet('/rooms');
+    const list = el('rooms-list');
+    list.innerHTML = '';
+    if (data.rooms.length === 0) {
+      list.innerHTML = '<div style="padding:8px;font-size:11px;color:#808080;">No rooms yet. Create one below!</div>';
+      return;
+    }
+    data.rooms.forEach(room => {
+      const div = document.createElement('div');
+      div.className = 'room-entry';
+      div.innerHTML = `
+        <div class="room-entry-info">
+          <span class="room-entry-name">#${room.name}</span>
+          ${room.topic ? `<span class="room-entry-topic">${room.topic}</span>` : ''}
+        </div>
+        <span class="room-entry-count">${room.members.length} online</span>
+      `;
+      div.addEventListener('dblclick', () => {
+        openRoomWindow(room.name);
+        el('rooms-window').style.display = 'none';
+      });
+      list.appendChild(div);
+    });
+  } catch {}
+}

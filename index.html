@@ -111,25 +111,85 @@
     <!-- Rooms Window -->
     <div class="cim-window" id="rooms-window">
       <div class="titlebar" id="rooms-titlebar">
+        <div class="titlebar-icon">🚪</div>
         <span class="titlebar-title">Chat Rooms</span>
         <div class="titlebar-buttons">
+          <button class="win-btn" id="btn-refresh-rooms" title="Refresh">↻</button>
           <button class="win-btn close" id="btn-close-rooms">✕</button>
         </div>
       </div>
+      <div class="rooms-toolbar">
+        <span class="rooms-label">Available rooms — double-click to join</span>
+      </div>
       <div class="rooms-body">
         <div id="rooms-list"></div>
-        <div class="room-create-row">
-          <input class="cim-input" id="new-room-input" placeholder="new-room" />
-          <button class="cim-btn" id="btn-create-room">Create</button>
-        </div>
+      </div>
+      <div class="rooms-footer">
+        <input class="cim-input" id="new-room-input" placeholder="new-room-name" style="flex:1" />
+        <button class="cim-btn" id="btn-create-room">Create</button>
       </div>
     </div>
 
   </div>
 
+  <!-- About Dialog -->
+  <div class="cim-window" id="about-dialog">
+    <div class="titlebar" id="about-titlebar">
+      <div class="titlebar-icon">🏃‍♂️</div>
+      <span class="titlebar-title">About cIM</span>
+      <div class="titlebar-buttons">
+        <button class="win-btn close" id="btn-close-about">✕</button>
+      </div>
+    </div>
+    <div class="about-body">
+      <div class="about-logo-row">
+        <div class="about-logo-icon">🏃‍♂️</div>
+        <div class="about-logo-text">
+          <div class="about-product">cIM</div>
+          <div class="about-version">Version 1.0</div>
+        </div>
+      </div>
+      <div class="about-divider"></div>
+      <div class="about-info">
+        <b>commodore. Instant Messenger</b><br>
+        <i>("commodore." refers to the developer,<br>
+        not the C64 or brand behind it.<br>
+        No affiliation whatsoever.)</i><br><br>
+        Built with FastAPI + WebSockets<br>
+        Hosted on Inspire · commodore. Technologies
+      </div>
+      <div class="about-divider"></div>
+      <div class="about-user-row">
+        This product is licensed to:<br>
+        <b id="about-username">—</b>
+      </div>
+      <div class="btn-row" style="justify-content:center; padding: 8px;">
+        <button class="cim-btn" id="btn-close-about-ok">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Start Menu -->
+  <div id="start-menu">
+    <div class="start-menu-header">
+      <div class="start-menu-runner">🏃‍♂️</div>
+      <span class="start-menu-username" id="start-menu-username">—</span>
+    </div>
+    <div class="start-menu-items">
+      <div class="start-menu-item" id="smenu-buddy-list"><span class="smenu-icon">💬</span> Buddy List</div>
+      <div class="start-menu-item" id="smenu-rooms"><span class="smenu-icon">🚪</span> Chat Rooms</div>
+      <div class="start-menu-item" id="smenu-away"><span class="smenu-icon">💤</span> Set Away Message</div>
+      <div class="start-menu-item" id="smenu-add-buddy"><span class="smenu-icon">👤</span> Add a Buddy</div>
+      <div class="start-menu-divider"></div>
+      <div class="start-menu-item" id="smenu-about"><span class="smenu-icon">❓</span> About cIM</div>
+      <div class="start-menu-divider"></div>
+      <div class="start-menu-item danger" id="smenu-signoff"><span class="smenu-icon">⛔</span> Sign Off</div>
+    </div>
+  </div>
+
   <!-- Taskbar -->
   <div id="taskbar">
-    <button class="start-btn">
+    <button class="start-btn" id="start-btn">
       🏃‍♂️ cIM
     </button>
     <div class="taskbar-items" id="taskbar-items"></div>
