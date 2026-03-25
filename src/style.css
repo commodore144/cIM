@@ -1,1089 +1,943 @@
-// cIM — commodore. Instant Messenger
-// Frontend App Logic
+/* cIM — commodore. Instant Messenger */
+/* Retro Windows 95/98 / AIM aesthetics */
 
-const API = 'https://inspire.tail0e8d21.ts.net/cim';
-const EMOJI_PATH = 'src/emojis/';
+:root {
+  --bg: #008080;
+  /* Teal desktop background */
+  --win-bg: #c0c0c0;
+  /* Classic grey */
+  --win-border: #dfdfdf;
+  --win-shadow: #808080;
+  --win-dark: #000000;
 
-// ── Emoji List ──────────────────────────────────────────────────────────────
-const EMOJIS = [
-  // Faces & emotions
-  'face-with-tears-of-joy','grinning-face-with-big-eyes','grinning-face-with-sweat',
-  'grinning-squinting-face','beaming-face-with-smiling-eyes','smiling-face-with-smiling-eyes',
-  'smiling-face-with-halo','smiling-face-with-heart-eyes','smiling-face-with-hearts',
-  'smiling-face-with-sunglasses','smiling-face-with-tear','smiling-face-with-horns',
-  'slightly-smiling-face','upside-down-face','winking-face','winking-face-with-tongue',
-  'squinting-face-with-tongue','face-with-tongue','zany-face','money-mouth-face',
-  'nerd-face','cowboy-hat-face','partying-face','disguised-face','face-with-monocle',
-  'thinking-face','saluting-face','melting-face','shaking-face','half-moon-face',
-  'face-with-raised-eyebrow','face-with-rolling-eyes','grimacing-face','face-without-mouth',
-  'dotted-line-face','smirking-face','neutral-face','expressionless-face',
-  'persevering-face','confused-face','worried-face','slightly-frowning-face',
-  'frowning-face','face-with-head-bandage','face-with-thermometer','face-with-medical-mask',
-  'sneezing-face','hot-face','cold-face','woozy-face','face-with-crossed-out-eyes',
-  'face-with-spiral-eyes','exploding-head','face-vomiting','face-savoring-food',
-  'drooling-face','sleeping-face','face-with-symbols-on-mouth','face-blowing-a-kiss',
-  'kissing-face','kissing-face-with-closed-eyes','kissing-face-with-smiling-eyes',
-  'face-holding-back-tears','loudly-crying-face','crying-face','hushed-face',
-  'yawning-face','fearful-face','flushed-face','pleading-face','anxious-face-with-sweat',
-  'sad-but-relieved-face','disappointed-face','weary-face','tired-face',
-  'nauseated-face','angry-face','enraged-face','angry-face-with-horns','skull',
-  'lying-face','relieved-face','pensive-face','star-struck','new-moon-face',
-  // Cats
-  'grinning-cat','grinning-cat-with-smiling-eyes','cat-with-tears-of-joy',
-  'smiling-cat-with-heart-eyes','cat-with-wry-smile','kissing-cat','weary-cat',
-  'crying-cat','pouting-cat',
-  // Hands & body
-  'thumbs-up','thumbs-down','ok-hand','clapping-hands','raising-hands','waving-hand',
-  'folded-hands','flexed-biceps','oncoming-fist','backhand-index-pointing-up',
-  'backhand-index-pointing-down','backhand-index-pointing-left','backhand-index-pointing-right',
-  // Symbols & misc
-  'red-heart','orange-heart','yellow-heart','green-heart','blue-heart','purple-heart',
-  'brown-heart','black-heart','white-heart','pink-heart','cyan-heart','mending-heart',
-  'broken-heart','fire','sparkles','star','dizzy','thought-bubble','speech-balloon',
-  'right-anger-bubble','eye-in-speech-bubble','zzz','cyclone','high-voltage',
-  'hundred-points','check-mark','cross-mark','exclamation-question-mark',
-  'double-exclamation-mark','red-exclamation-mark','white-exclamation-mark',
-  'red-question-mark','white-question-mark','warning','stop-sign','no-entry',
-  'prohibited','no-bicycles','no-littering','no-mobile-phones','non-potable-water',
-  'no-one-under-eighteen','no-pedestrians','no-smoking','anger-symbol','police-car-light',
-  // Animals
-  'cat-face','bird','duck','baby-chick','hatching-chick','hedgehog','snake',
-  'turtle','crab','sauropod','dinosaur','spouting-whale','ghost','alien',
-  'alien-monster','robot','moai',
-  // Food & drink
-  'red-apple','green-apple','pear','peach','cherries','banana','watermelon',
-  'tangerine','lemon','lime','kiwi-fruit','pineapple','avacado','tomato','eggplant',
-  'cucumber','carrot','garlic','onion','pepper','potato','cactus','mushroom',
-  'four-leaf-clover','cherry-blossom','pizza','bacon','baguette','croissant',
-  'waffle','pancakes','french-fries','popcorn','poultry-leg','meat-on-bone',
-  'green-salad','shallow-pan-of-food','sushi','rice-ball','rice-cracker',
-  'fish-cake-with-swirl','doughnut','cookie','chocolate-bar','candy','lollipop',
-  'cupcake','pie','ice-cream','coconut','egg','salt','glass-of-milk','wine-glass',
-  'beverage-box',
-  // Objects
-  'gem-stone','money-bag','crystal-ball','game-die','pool-8-ball','puzzle-piece',
-  'bowling','boxing-glove','tennis-ball','rocket','light-bulb','magnet','key',
-  'locked','floppy-disk','toolbox','fire-extinguisher','roll-of-paper','soap',
-  'tooth','bone','pill','camera','camera-with-flash','compass','globe-meridians',
-  'rainbow','snowman','christmas-tree','jack-o-lantern','party-popper',
-  'triangular-flag','triangular-ruler','thread','yarn','socks','billed-cap',
-  'crown','brain','headstone','wastebasket','file-folder','open-file-folder',
-  'speaker-high','hear-no-evil-monkey','see-no-evil-monkey','speak-no-evil-monkey',
-  // Medals
-  '1st-place-medal','2nd-place-medal','3rd-place-medal',
-  // Custom
-  '_custom_alert','_custom_blink','_custom_bubble','_custom_content','_custom_unimpressed',
-  // Pistol (why not)
-  'pistol',
-];
+  /* Active Blue Gradient */
+  --titlebar: linear-gradient(to right, #000080, #1084d0);
+  /* Inactive Titlebar */
+  --titlebar-inactive: #808080;
 
-// ── State ──────────────────────────────────────────────────────────────────
-let token = localStorage.getItem('cim_token') || null;
-let myUsername = localStorage.getItem('cim_username') || null;
-let ws = null;
-let wsReconnectTimer = null;
-let commMode = 'ws'; // or 'rest'
-let pollTimer = null;
-let buddies = {}; // username -> {online, status, away_message}
-let openChats = {}; // username -> {winEl, unread}
-let openRooms = {}; // room name -> {winEl}
-let zCounter = 10;
-let activeEmojiPicker = null; // currently open picker
+  --accent: #000080;
+  --accent2: #ff0000;
+  --text: #000000;
+  --text-dim: #404040;
+  --online: #00ff00;
+  --away: #ffcc00;
+  --offline: #808080;
 
-// ── Audio ──────────────────────────────────────────────────────────────────
-const AudioCtx = window.AudioContext || window.webkitAudioContext;
-let audioCtx = null;
+  --msg-self: #ffffff;
+  --msg-other: #ffffff;
 
-function getAudioCtx() {
-  if (!audioCtx) audioCtx = new AudioCtx();
-  return audioCtx;
+  /* Win95 3D effects */
+  --outset: 1px 1px 0px #fff inset, -1px -1px 0px #808080 inset, 2px 2px 0px #dfdfdf inset, -2px -2px 0px #000 inset;
+  --inset: 1px 1px 0px #808080 inset, -1px -1px 0px #fff inset, 2px 2px 0px #000 inset, -2px -2px 0px #dfdfdf inset;
+
+  --font-ui: 'Tahoma', 'Segoe UI', 'MS Sans Serif', sans-serif;
+  --font-msg: 'Arial', sans-serif;
 }
 
-function playTone(freq, duration, type = 'sine', vol = 0.15) {
-  try {
-    const ctx = getAudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = type;
-    osc.frequency.value = freq;
-    gain.gain.value = vol;
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + duration);
-  } catch { }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-function playDoorSound() {
-  playTone(800, 0.08, 'square', 0.1);
-  setTimeout(() => playTone(400, 0.12, 'square', 0.1), 80);
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  min-height: 100vh;
+  overflow: hidden;
 }
 
-function playMsgSound() {
-  playTone(880, 0.06, 'sine', 0.12);
-  setTimeout(() => playTone(1100, 0.08, 'sine', 0.12), 60);
+/* ── Desktop ──────────────────────────────────────────── */
+#desktop {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  display: none;
 }
 
-function playBuddyOnSound() {
-  playTone(880, 0.08, 'sine', 0.1);
-  setTimeout(() => playTone(1100, 0.06, 'sine', 0.1), 90);
-  setTimeout(() => playTone(1320, 0.1, 'sine', 0.1), 170);
+#desktop.active {
+  display: block;
 }
 
-// ── Utilities ──────────────────────────────────────────────────────────────
-function el(id) { return document.getElementById(id); }
-
-function formatTime(ts) {
-  const d = ts ? new Date(ts) : new Date();
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+/* ── Window chrome ────────────────────────────────────── */
+.cim-window {
+  position: absolute;
+  background: var(--win-bg);
+  border: 2px solid;
+  border-color: #dfdfdf #000 #000 #dfdfdf;
+  /* Simple 3D border */
+  box-shadow: 1px 1px 0 #808080;
+  min-width: 200px;
+  user-select: none;
+  padding: 2px;
 }
 
-function updateClock() {
-  const clock = el('taskbar-clock');
-  if (clock) clock.textContent = formatTime();
-}
-setInterval(updateClock, 5000);
-updateClock();
-
-// ── Emoji rendering ────────────────────────────────────────────────────────
-const EMOJI_SET = new Set(EMOJIS);
-
-// Convert :shortcode: in text to <img> tags. Text is pre-escaped.
-function renderContent(rawText) {
-  const escaped = rawText
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-  return escaped.replace(/:([a-z0-9_-]+):/g, (match, name) => {
-    if (EMOJI_SET.has(name)) {
-      return `<img class="chat-emoji" src="${EMOJI_PATH}${name}.png" alt=":${name}:" title=":${name}:">`;
-    }
-    return match;
-  });
+.cim-window.focused {
+  z-index: 100 !important;
 }
 
-// Insert :shortcode: at cursor in a textarea
-function insertAtCursor(textarea, text) {
-  const start = textarea.selectionStart;
-  const end = textarea.selectionEnd;
-  const val = textarea.value;
-  textarea.value = val.slice(0, start) + text + val.slice(end);
-  textarea.selectionStart = textarea.selectionEnd = start + text.length;
-  textarea.focus();
+.titlebar {
+  background: var(--titlebar-inactive);
+  padding: 3px 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: move;
 }
 
-// ── Emoji Picker ───────────────────────────────────────────────────────────
-function createEmojiPicker(inputEl) {
-  // Close any existing picker
-  if (activeEmojiPicker) {
-    activeEmojiPicker.remove();
-    activeEmojiPicker = null;
-  }
-
-  const picker = document.createElement('div');
-  picker.className = 'emoji-picker';
-
-  // Search bar
-  const search = document.createElement('input');
-  search.type = 'text';
-  search.className = 'emoji-search';
-  search.placeholder = 'Search emojis...';
-  picker.appendChild(search);
-
-  // Grid
-  const grid = document.createElement('div');
-  grid.className = 'emoji-grid';
-  picker.appendChild(grid);
-
-  function renderGrid(filter = '') {
-    grid.innerHTML = '';
-    const filtered = filter
-      ? EMOJIS.filter(e => e.includes(filter.toLowerCase()))
-      : EMOJIS;
-    if (filtered.length === 0) {
-      grid.innerHTML = '<div style="padding:6px;font-size:11px;color:#808080;">No results</div>';
-      return;
-    }
-    filtered.forEach(name => {
-      const btn = document.createElement('button');
-      btn.className = 'emoji-btn';
-      btn.title = `:${name}:`;
-      const img = document.createElement('img');
-      img.src = `${EMOJI_PATH}${name}.png`;
-      img.alt = `:${name}:`;
-      img.width = 11;
-      img.height = 11;
-      btn.appendChild(img);
-      btn.addEventListener('mousedown', e => {
-        e.preventDefault(); // don't blur textarea
-        insertAtCursor(inputEl, `:${name}:`);
-        picker.remove();
-        activeEmojiPicker = null;
-      });
-      grid.appendChild(btn);
-    });
-  }
-
-  renderGrid();
-  search.addEventListener('input', () => renderGrid(search.value));
-
-  // Position above the input
-  document.body.appendChild(picker);
-  const rect = inputEl.getBoundingClientRect();
-  picker.style.left = rect.left + 'px';
-  picker.style.top = (rect.top - picker.offsetHeight - 4) + 'px';
-
-  // If it goes off screen upward, flip below
-  if (parseFloat(picker.style.top) < 0) {
-    picker.style.top = (rect.bottom + 4) + 'px';
-  }
-
-  activeEmojiPicker = picker;
-
-  // Close on outside click
-  setTimeout(() => {
-    function outsideClick(e) {
-      if (!picker.contains(e.target) && e.target !== inputEl) {
-        picker.remove();
-        activeEmojiPicker = null;
-        document.removeEventListener('mousedown', outsideClick);
-      }
-    }
-    document.addEventListener('mousedown', outsideClick);
-  }, 0);
+.focused .titlebar {
+  background: var(--titlebar);
 }
 
-// ── API helpers ────────────────────────────────────────────────────────────
-async function apiPost(path, body, auth = false) {
-  const headers = { 'Content-Type': 'application/json' };
-  if (auth && token) headers['Authorization'] = `Bearer ${token}`;
-  const res = await fetch(API + path, { method: 'POST', headers, body: JSON.stringify(body) });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || 'Request failed');
-  return data;
+.titlebar-icon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-async function apiGet(path) {
-  const res = await fetch(API + path, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || 'Request failed');
-  return data;
+.titlebar-title {
+  flex: 1;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: bold;
+  color: #dfdfdf;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-async function apiDelete(path) {
-  const res = await fetch(API + path, {
-    method: 'DELETE',
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  return res.ok;
+.focused .titlebar-title {
+  color: #fff;
 }
 
-// ── Window management ──────────────────────────────────────────────────────
-function makeDraggable(winEl, handleEl) {
-  let dragging = false, ox = 0, oy = 0;
-  handleEl.addEventListener('mousedown', e => {
-    if (e.target.classList.contains('win-btn')) return;
-    dragging = true;
-    ox = e.clientX - winEl.offsetLeft;
-    oy = e.clientY - winEl.offsetTop;
-    focusWindow(winEl);
-    e.preventDefault();
-  });
-  document.addEventListener('mousemove', e => {
-    if (!dragging) return;
-    let x = e.clientX - ox;
-    let y = e.clientY - oy;
-    x = Math.max(0, Math.min(x, window.innerWidth - winEl.offsetWidth));
-    y = Math.max(0, Math.min(y, window.innerHeight - 28 - winEl.offsetHeight));
-    winEl.style.left = x + 'px';
-    winEl.style.top = y + 'px';
-  });
-  document.addEventListener('mouseup', () => { dragging = false; });
-  winEl.addEventListener('mousedown', () => focusWindow(winEl));
+.titlebar-buttons {
+  display: flex;
+  gap: 2px;
 }
 
-function focusWindow(winEl) {
-  document.querySelectorAll('.cim-window.focused').forEach(w => w.classList.remove('focused'));
-  winEl.classList.add('focused');
-  winEl.style.zIndex = ++zCounter;
-  updateTaskbar();
+.win-btn {
+  width: 16px;
+  height: 14px;
+  background: var(--win-bg);
+  border: 1px solid;
+  border-color: #fff #000 #000 #fff;
+  color: #000;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
-function placeWindowCascade() {
-  const count = document.querySelectorAll('.chat-window, .room-window').length;
-  const offset = count * 24;
-  return { top: 40 + offset, left: 280 + offset };
+.win-btn:active {
+  border-color: #000 #fff #fff #000;
+  padding-top: 1px;
+  padding-left: 1px;
 }
 
-function updateTaskbar() {
-  const items = el('taskbar-items');
-  items.innerHTML = '';
-  const focused = document.querySelector('.cim-window.focused');
-
-  addTaskbarItem('💬 Buddy List', el('buddy-list-window'), focused === el('buddy-list-window'));
-
-  Object.entries(openChats).forEach(([user, chat]) => {
-    const unread = chat.unread ? ` (${chat.unread})` : '';
-    addTaskbarItem(`✉ ${user}${unread}`, chat.winEl, focused === chat.winEl);
-  });
-
-  Object.entries(openRooms).forEach(([room, r]) => {
-    addTaskbarItem(`# ${room}`, r.winEl, focused === r.winEl);
-  });
+/* ── Login screen ─────────────────────────────────────── */
+#login-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
 }
 
-function addTaskbarItem(label, winEl, active) {
-  const btn = document.createElement('button');
-  btn.className = 'taskbar-item' + (active ? ' active-win' : '');
-  btn.textContent = label;
-  btn.addEventListener('click', () => {
-    winEl.style.display = 'block';
-    focusWindow(winEl);
-  });
-  el('taskbar-items').appendChild(btn);
+#login-window {
+  width: 280px;
 }
 
-// ── Connection Mode Toggle ─────────────────────────────────────────────────
-function setCommMode(mode) {
-  commMode = mode;
-  const ind = el('conn-indicator');
-  const txt = el('conn-mode-text');
-  if (mode === 'ws') {
-    ind.className = 'conn-indicator ws';
-    txt.textContent = 'WS';
-    if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
-    connectWS();
-  } else {
-    ind.className = 'conn-indicator rest';
-    txt.textContent = 'REST';
-    if (ws) { ws.close(); ws = null; }
-    startRESTPolling();
-  }
+.login-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-el('conn-mode-toggle').addEventListener('click', () => {
-  const next = commMode === 'ws' ? 'rest' : 'ws';
-  localStorage.setItem('cim_commmode', next);
-  setCommMode(next);
-});
-
-// ── Login / Register ───────────────────────────────────────────────────────
-el('btn-login').addEventListener('click', doLogin);
-el('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-el('login-username').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-
-el('btn-show-register').addEventListener('click', () => {
-  el('btn-show-register').textContent = 'Sign On';
-  el('btn-show-register').addEventListener('click', () => location.reload(), { once: true });
-  el('btn-login').textContent = 'Register';
-  el('btn-login').onclick = doRegister;
-  document.querySelector('#login-window .titlebar-title').textContent = 'cIM — New User';
-});
-
-async function doLogin() {
-  const username = el('login-username').value.trim();
-  const password = el('login-password').value;
-  el('login-error').textContent = '';
-  if (!username || !password) { el('login-error').textContent = 'Fill in all fields'; return; }
-  try {
-    const data = await apiPost('/login', { username, password });
-    token = data.token;
-    myUsername = data.username;
-    localStorage.setItem('cim_token', token);
-    localStorage.setItem('cim_username', myUsername);
-    document.title = `cIM — ${myUsername}`;
-    enterDesktop();
-  } catch (e) {
-    el('login-error').textContent = e.message;
-  }
+.cim-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--win-shadow);
+  margin-bottom: 4px;
 }
 
-async function doRegister() {
-  const username = el('login-username').value.trim();
-  const password = el('login-password').value;
-  el('login-error').textContent = '';
-  if (!username || !password) { el('login-error').textContent = 'Fill in all fields'; return; }
-  if (username.length < 3) { el('login-error').textContent = 'Screen name must be 3+ chars'; return; }
-  try {
-    const data = await apiPost('/register', { username, password });
-    token = data.token;
-    myUsername = data.username;
-    localStorage.setItem('cim_token', token);
-    localStorage.setItem('cim_username', myUsername);
-    document.title = `cIM — ${myUsername}`;
-    enterDesktop();
-  } catch (e) {
-    el('login-error').textContent = e.message;
-  }
+.cim-logo .logo-icon {
+  font-size: 32px;
 }
 
-// ── Desktop init ───────────────────────────────────────────────────────────
-function enterDesktop() {
-  el('login-screen').style.display = 'none';
-  el('desktop').classList.add('active');
-  el('taskbar').classList.add('active');
-  el('self-name').textContent = myUsername;
-  el('start-menu-username').textContent = myUsername;
-
-  makeDraggable(el('buddy-list-window'), el('buddy-titlebar'));
-  makeDraggable(el('away-dialog'), el('away-titlebar'));
-  makeDraggable(el('add-buddy-dialog'), el('add-buddy-titlebar'));
-  makeDraggable(el('rooms-window'), el('rooms-titlebar'));
-  makeDraggable(el('about-dialog'), el('about-titlebar'));
-
-  focusWindow(el('buddy-list-window'));
-  const savedMode = localStorage.getItem('cim_commmode') || 'ws';
-  setCommMode(savedMode);
+.cim-logo .logo-name {
+  font-family: var(--font-ui);
+  font-size: 24px;
+  font-weight: bold;
+  color: #000;
+  letter-spacing: -1px;
 }
 
-// Auto-login if token exists
-if (token && myUsername) {
-  document.title = `cIM — ${myUsername}`;
-  enterDesktop();
+.cim-logo .logo-sub {
+  font-size: 11px;
+  color: var(--text-dim);
 }
 
-// ── WebSocket ──────────────────────────────────────────────────────────────
-function connectWS() {
-  if (commMode !== 'ws') return;
-  if (ws) ws.close();
-  const wsUrl = API.replace('https://', 'wss://').replace('http://', 'ws://');
-  ws = new WebSocket(`${wsUrl}/ws?token=${token}`);
-
-  ws.onopen = () => {
-    el('disconnect-banner').classList.remove('visible');
-    if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
-  };
-
-  ws.onmessage = e => {
-    try { handleWSMessage(JSON.parse(e.data)); }
-    catch (err) { console.error('WS parse error', err); }
-  };
-
-  ws.onclose = () => {
-    if (commMode !== 'ws') return;
-    el('disconnect-banner').classList.add('visible');
-    wsReconnectTimer = setTimeout(connectWS, 3000);
-  };
-
-  ws.onerror = () => {
-    if (ws) ws.close();
-    console.log('WS error, falling back to REST');
-    setCommMode('rest');
-  };
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-async function startRESTPolling() {
-  if (commMode !== 'rest') return;
-  try {
-    const data = await apiPost('/poll/connect', {}, true);
-    handleWSMessage(data);
-    pollLoop();
-  } catch (e) {
-    console.error('Poll connect failed', e);
-    setTimeout(startRESTPolling, 5000);
-  }
+.field-group label {
+  font-size: 11px;
+  font-weight: bold;
 }
 
-async function pollLoop() {
-  if (commMode !== 'rest') return;
-  try {
-    const data = await apiGet('/poll/messages');
-    if (data.messages) data.messages.forEach(msg => handleWSMessage(msg));
-    el('disconnect-banner').classList.remove('visible');
-    pollLoop();
-  } catch (e) {
-    el('disconnect-banner').classList.add('visible');
-    pollTimer = setTimeout(pollLoop, 3000);
-  }
+.cim-input {
+  background: #fff;
+  border: 1px solid;
+  border-color: #808080 #dfdfdf #dfdfdf #808080;
+  color: #000;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  padding: 3px 4px;
+  outline: none;
+  width: 100%;
 }
 
-function wsSend(msg) {
-  if (commMode === 'ws' && ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify(msg));
-  } else if (commMode === 'rest') {
-    handleRestSend(msg);
-  }
+.btn-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  justify-content: flex-end;
 }
 
-async function handleRestSend(msg) {
-  try {
-    if (msg.type === 'dm') {
-      await apiPost('/poll/dm', { to: msg.to, content: msg.content }, true);
-      appendDMMessage(msg.to, 'self', myUsername, msg.content);
-    } else if (msg.type === 'room_message') {
-      await apiPost('/poll/room/message', { room: msg.room, content: msg.content }, true);
-    } else if (msg.type === 'join_room') {
-      const data = await apiPost('/poll/room/join', { room: msg.room }, true);
-      handleWSMessage(data);
-    } else if (msg.type === 'leave_room') {
-      await apiPost('/poll/room/leave', { room: msg.room }, true);
-    } else if (msg.type === 'typing') {
-      await apiPost('/poll/typing', { to: msg.to }, true);
-    }
-  } catch (e) {
-    console.error('Rest send failed', e);
-  }
+.cim-btn {
+  min-width: 75px;
+  background: var(--win-bg);
+  border: 1px solid;
+  border-color: #fff #000 #000 #fff;
+  color: #000;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  padding: 4px 8px;
+  cursor: pointer;
 }
 
-// ── Message handler ────────────────────────────────────────────────────────
-function handleWSMessage(msg) {
-  switch (msg.type) {
-    case 'init':
-      el('self-name').textContent = msg.username;
-      if (msg.away_message) {
-        el('self-status-dot').className = 'status-dot away';
-        el('away-input').value = msg.away_message;
-      }
-      msg.buddies.forEach(b => { buddies[b.username] = b; });
-      renderBuddyList();
-      break;
-    case 'dm':
-      receiveDM(msg.from, msg.content);
-      break;
-    case 'dm_echo':
-      appendDMMessage(msg.to, 'self', myUsername, msg.content);
-      break;
-    case 'typing':
-      showTyping(msg.from);
-      break;
-    case 'presence':
-      handlePresence(msg.user, msg.status, msg.away_message);
-      break;
-    case 'room_message':
-    case 'room_message_echo':
-      appendRoomMessage(msg.room, msg.from, msg.content);
-      break;
-    case 'room_joined':
-      onRoomJoined(msg.room, msg.members);
-      break;
-    case 'room_event':
-      handleRoomEvent(msg);
-      break;
-  }
+.cim-btn:active {
+  border-color: #000 #fff #fff #000;
+  padding-top: 5px;
+  padding-left: 9px;
 }
 
-// ── Buddy List ─────────────────────────────────────────────────────────────
-function renderBuddyList() {
-  const body = el('buddy-list-body');
-  const online  = Object.values(buddies).filter(b => b.online && b.status !== 'away');
-  const away    = Object.values(buddies).filter(b => b.online && b.status === 'away');
-  const offline = Object.values(buddies).filter(b => !b.online);
-
-  body.innerHTML = '';
-
-  if (Object.keys(buddies).length === 0) {
-    body.innerHTML = '<div style="padding:8px 6px;font-size:11px;color:#808080;">No buddies yet.<br>Add someone to get started.</div>';
-    return;
-  }
-
-  if (online.length)  renderBuddyGroup(body, `Online (${online.length})`,  online,  'online');
-  if (away.length)    renderBuddyGroup(body, `Away (${away.length})`,      away,    'away');
-  if (offline.length) renderBuddyGroup(body, `Offline (${offline.length})`,offline, 'offline');
-
-  updateTaskbar();
+.login-error {
+  color: #ff0000;
+  font-size: 11px;
+  text-align: center;
+  min-height: 14px;
 }
 
-function renderBuddyGroup(container, title, list, statusClass) {
-  const group = document.createElement('div');
-  group.className = 'buddy-group';
-
-  const header = document.createElement('div');
-  header.className = 'buddy-group-header';
-  header.innerHTML = `<span>${title}</span><span class="toggle">▾</span>`;
-  group.appendChild(header);
-
-  const items = document.createElement('div');
-  items.className = 'buddy-group-items';
-
-  list.forEach(buddy => {
-    const entry = document.createElement('div');
-    entry.className = `buddy-entry ${statusClass}`;
-    entry.innerHTML = `<div class="status-dot ${statusClass}"></div><span class="buddy-name">${buddy.username}</span>`;
-    entry.addEventListener('dblclick', () => openDMWindow(buddy.username));
-    items.appendChild(entry);
-
-    if (buddy.away_message) {
-      const awayLine = document.createElement('div');
-      awayLine.className = 'buddy-away-text';
-      awayLine.textContent = `"${buddy.away_message}"`;
-      items.appendChild(awayLine);
-    }
-  });
-
-  group.appendChild(items);
-
-  let collapsed = false;
-  header.addEventListener('click', () => {
-    collapsed = !collapsed;
-    items.style.display = collapsed ? 'none' : '';
-    header.querySelector('.toggle').textContent = collapsed ? '▸' : '▾';
-  });
-
-  container.appendChild(group);
+/* ── Buddy List ───────────────────────────────────────── */
+#buddy-list-window {
+  width: 180px;
+  top: 40px;
+  left: 40px;
 }
 
-function handlePresence(username, status, away_message) {
-  if (!buddies[username]) return;
-  const wasOnline = buddies[username].online;
-
-  buddies[username].online = status !== 'offline';
-  buddies[username].status = status;
-  buddies[username].away_message = away_message;
-
-  if (!wasOnline && status !== 'offline') {
-    playBuddyOnSound();
-    if (openChats[username]) appendDMMessage(username, 'system', null, `${username} is now online`);
-  } else if (wasOnline && status === 'offline') {
-    playDoorSound();
-    if (openChats[username]) appendDMMessage(username, 'system', null, `${username} has signed off`);
-  }
-
-  // Update open chat window header
-  if (openChats[username]) {
-    const chatWith = openChats[username].winEl.querySelector('.chat-with');
-    if (chatWith) {
-      const dotClass = status === 'online' ? 'online' : status === 'away' ? 'away' : 'offline';
-      chatWith.innerHTML = `<div class="status-dot ${dotClass}"></div>${username} — ${status}${away_message ? `: "${away_message}"` : ''}`;
-    }
-  }
-
-  renderBuddyList();
+.buddy-list-header {
+  padding: 6px;
+  background: #fff;
+  border: 1px solid;
+  border-color: #808080 #dfdfdf #dfdfdf #808080;
+  margin: 4px;
 }
 
-// ── DM Windows ─────────────────────────────────────────────────────────────
-function openDMWindow(username) {
-  if (openChats[username]) {
-    openChats[username].winEl.style.display = 'block';
-    focusWindow(openChats[username].winEl);
-    return;
-  }
-
-  const buddy = buddies[username] || { status: 'offline', away_message: '' };
-  const pos = placeWindowCascade();
-  const winEl = document.createElement('div');
-  winEl.className = 'cim-window chat-window';
-  winEl.style.top = pos.top + 'px';
-  winEl.style.left = pos.left + 'px';
-  winEl.innerHTML = `
-    <div class="titlebar" id="chat-title-${username}">
-      <span class="titlebar-icon">✉</span>
-      <span class="titlebar-title">${username}</span>
-      <div class="titlebar-buttons">
-        <button class="win-btn close chat-close">✕</button>
-      </div>
-    </div>
-    <div class="chat-with">
-      <div class="status-dot ${buddy.status}"></div>
-      ${username} — ${buddy.status}${buddy.away_message ? `: "${buddy.away_message}"` : ''}
-    </div>
-    <div class="chat-messages" id="msgs-${username}"></div>
-    <div class="typing-indicator" id="typing-${username}"></div>
-    <div class="chat-input-row">
-      <button class="emoji-trigger" id="emoji-btn-dm-${username}" title="Emojis">😊</button>
-      <textarea class="chat-input" id="input-${username}" placeholder="Message ${username}..." rows="2"></textarea>
-      <button class="send-btn" id="send-${username}">Send</button>
-    </div>
-  `;
-
-  document.getElementById('desktop').appendChild(winEl);
-  makeDraggable(winEl, winEl.querySelector('.titlebar'));
-  focusWindow(winEl);
-  openChats[username] = { winEl, unread: 0 };
-
-  winEl.querySelector('.chat-close').addEventListener('click', () => {
-    winEl.style.display = 'none';
-    delete openChats[username];
-    updateTaskbar();
-  });
-
-  const inputEl = document.getElementById(`input-${username}`);
-  document.getElementById(`send-${username}`).addEventListener('click', () => sendDM(username));
-  inputEl.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendDM(username); }
-  });
-
-  let typingTimer = null;
-  inputEl.addEventListener('input', () => {
-    wsSend({ type: 'typing', to: username });
-    clearTimeout(typingTimer);
-    typingTimer = setTimeout(() => {}, 2000);
-  });
-
-  document.getElementById(`emoji-btn-dm-${username}`).addEventListener('click', e => {
-    e.stopPropagation();
-    createEmojiPicker(inputEl);
-  });
-
-  loadDMHistory(username);
-  updateTaskbar();
+.buddy-self {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-async function loadDMHistory(username) {
-  try {
-    const data = await apiGet(`/history/dm/${username}`);
-    data.messages.forEach(msg => {
-      appendDMMessage(username,
-        msg.sender === myUsername ? 'self' : 'other',
-        msg.sender, msg.content, msg.timestamp
-      );
-    });
-  } catch { }
+.status-dot {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  border: 1px solid #000;
 }
 
-function sendDM(username) {
-  const input = document.getElementById(`input-${username}`);
-  const content = input.value.trim();
-  if (!content) return;
-  input.value = '';
-  wsSend({ type: 'dm', to: username, content });
+.status-dot.online {
+  background: var(--online);
 }
 
-function receiveDM(from, content) {
-  playMsgSound();
-  if (!openChats[from]) openDMWindow(from);
-  appendDMMessage(from, 'other', from, content);
-  const focused = document.querySelector('.cim-window.focused');
-  if (focused !== openChats[from]?.winEl) {
-    openChats[from].unread = (openChats[from].unread || 0) + 1;
-    updateTaskbar();
-  }
+.status-dot.away {
+  background: var(--away);
 }
 
-function appendDMMessage(username, side, sender, content, timestamp) {
-  const container = document.getElementById(`msgs-${username}`);
-  if (!container) return;
-
-  const div = document.createElement('div');
-  div.className = `msg ${side}`;
-
-  if (side !== 'system' && sender) {
-    const senderEl = document.createElement('div');
-    senderEl.className = 'msg-sender';
-    senderEl.textContent = sender;
-    div.appendChild(senderEl);
-  }
-
-  const text = document.createElement('div');
-  text.className = 'msg-text';
-  text.innerHTML = renderContent(content);
-  div.appendChild(text);
-
-  container.appendChild(div);
-  container.scrollTop = container.scrollHeight;
-
-  if (openChats[username] && document.querySelector('.cim-window.focused') === openChats[username].winEl) {
-    openChats[username].unread = 0;
-    updateTaskbar();
-  }
+.status-dot.offline {
+  background: var(--offline);
 }
 
-let typingTimers = {};
-function showTyping(from) {
-  const indicator = document.getElementById(`typing-${from}`);
-  if (!indicator) return;
-  indicator.textContent = `${from} is typing...`;
-  clearTimeout(typingTimers[from]);
-  typingTimers[from] = setTimeout(() => { indicator.textContent = ''; }, 3000);
+.buddy-self-name {
+  font-size: 13px;
+  font-weight: bold;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-// ── Room Windows ───────────────────────────────────────────────────────────
-function openRoomWindow(roomName) {
-  if (openRooms[roomName]) {
-    openRooms[roomName].winEl.style.display = 'block';
-    focusWindow(openRooms[roomName].winEl);
-    return;
-  }
-
-  const pos = placeWindowCascade();
-  const winEl = document.createElement('div');
-  winEl.className = 'cim-window room-window';
-  winEl.style.top = pos.top + 'px';
-  winEl.style.left = pos.left + 'px';
-  winEl.innerHTML = `
-    <div class="titlebar" id="room-title-${roomName}">
-      <span class="titlebar-icon">🚪</span>
-      <span class="titlebar-title">#${roomName}</span>
-      <div class="titlebar-buttons">
-        <button class="win-btn close room-close">✕</button>
-      </div>
-    </div>
-    <div class="room-layout">
-      <div class="room-messages" id="room-msgs-${roomName}"></div>
-      <div class="room-members" id="room-members-${roomName}">
-        <div class="room-members-header">USERS</div>
-      </div>
-    </div>
-    <div class="chat-input-row">
-      <button class="emoji-trigger" id="emoji-btn-room-${roomName}" title="Emojis">😊</button>
-      <textarea class="chat-input" id="room-input-${roomName}" placeholder="#${roomName}" rows="2"></textarea>
-      <button class="send-btn" id="room-send-${roomName}">Send</button>
-    </div>
-  `;
-
-  document.getElementById('desktop').appendChild(winEl);
-  makeDraggable(winEl, winEl.querySelector('.titlebar'));
-  focusWindow(winEl);
-  openRooms[roomName] = { winEl };
-
-  winEl.querySelector('.room-close').addEventListener('click', () => {
-    wsSend({ type: 'leave_room', room: roomName });
-    winEl.style.display = 'none';
-    delete openRooms[roomName];
-    updateTaskbar();
-  });
-
-  const roomInputEl = document.getElementById(`room-input-${roomName}`);
-  document.getElementById(`room-send-${roomName}`).addEventListener('click', () => sendRoomMsg(roomName));
-  roomInputEl.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendRoomMsg(roomName); }
-  });
-
-  document.getElementById(`emoji-btn-room-${roomName}`).addEventListener('click', e => {
-    e.stopPropagation();
-    createEmojiPicker(roomInputEl);
-  });
-
-  wsSend({ type: 'join_room', room: roomName });
-  loadRoomHistory(roomName);
-  updateTaskbar();
+.buddy-toolbar {
+  display: flex;
+  padding: 2px 4px;
+  gap: 2px;
+  border-bottom: 1px solid var(--win-shadow);
 }
 
-async function loadRoomHistory(roomName) {
-  try {
-    const data = await apiGet(`/history/room/${roomName}`);
-    data.messages.forEach(msg => appendRoomMessage(roomName, msg.sender, msg.content, msg.timestamp));
-  } catch { }
+.tool-btn {
+  background: var(--win-bg);
+  border: 1px solid;
+  border-color: #fff #000 #000 #fff;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  padding: 2px 4px;
+  cursor: pointer;
 }
 
-function sendRoomMsg(roomName) {
-  const input = document.getElementById(`room-input-${roomName}`);
-  const content = input.value.trim();
-  if (!content) return;
-  input.value = '';
-  wsSend({ type: 'room_message', room: roomName, content });
+.tool-btn:active {
+  border-color: #000 #fff #fff #000;
 }
 
-function appendRoomMessage(roomName, from, content, timestamp) {
-  const container = document.getElementById(`room-msgs-${roomName}`);
-  if (!container) return;
-  const div = document.createElement('div');
-  div.className = `msg ${from === myUsername ? 'self' : from === '—' ? 'system' : 'other'}`;
-  if (from !== '—') {
-    div.innerHTML = `<div class="msg-sender">${from}</div><div class="msg-text">${renderContent(content)}</div>`;
-  } else {
-    div.innerHTML = `<div class="msg-text" style="color:#808080;font-style:italic">${content}</div>`;
-  }
-  container.appendChild(div);
-  container.scrollTop = container.scrollHeight;
+.buddy-list-body {
+  overflow-y: auto;
+  max-height: 400px;
+  background: #fff;
+  margin: 4px;
+  border: 1px solid;
+  border-color: #808080 #dfdfdf #dfdfdf #808080;
+  min-height: 100px;
 }
 
-function onRoomJoined(roomName, members) {
-  updateRoomMembers(roomName, members);
-  appendRoomMessage(roomName, '—', `You joined #${roomName}`);
+.buddy-group-header {
+  padding: 2px 4px;
+  font-size: 11px;
+  font-weight: bold;
+  background: #dfdfdf;
+  border-bottom: 1px solid var(--win-shadow);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-function updateRoomMembers(roomName, members) {
-  const container = document.getElementById(`room-members-${roomName}`);
-  if (!container) return;
-  container.innerHTML = '<div class="room-members-header">USERS</div>';
-  members.forEach(m => {
-    const div = document.createElement('div');
-    div.className = 'room-member';
-    div.innerHTML = `<div class="status-dot online"></div>${m}`;
-    div.addEventListener('dblclick', () => openDMWindow(m));
-    container.appendChild(div);
-  });
+.buddy-entry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  cursor: pointer;
 }
 
-function handleRoomEvent(msg) {
-  if (msg.event === 'join') {
-    appendRoomMessage(msg.room, '—', `${msg.user} joined the room`);
-    // Refresh members
-    if (openRooms[msg.room]) {
-      const membersEl = document.getElementById(`room-members-${msg.room}`);
-      if (membersEl) {
-        const existing = Array.from(membersEl.querySelectorAll('.room-member'))
-          .map(el => el.textContent.trim());
-        if (!existing.includes(msg.user)) {
-          const div = document.createElement('div');
-          div.className = 'room-member';
-          div.innerHTML = `<div class="status-dot online"></div>${msg.user}`;
-          div.addEventListener('dblclick', () => openDMWindow(msg.user));
-          membersEl.appendChild(div);
-        }
-      }
-    }
-  } else if (msg.event === 'leave') {
-    appendRoomMessage(msg.room, '—', `${msg.user} left the room`);
-  }
+.buddy-entry:hover {
+  background: #000080;
+  color: #fff;
 }
 
-// ── Away Message ───────────────────────────────────────────────────────────
-el('btn-set-away').addEventListener('click', () => {
-  el('away-dialog').style.display = 'block';
-  el('away-dialog').style.top = '100px';
-  el('away-dialog').style.left = '300px';
-  focusWindow(el('away-dialog'));
-});
-
-el('btn-close-away').addEventListener('click', () => { el('away-dialog').style.display = 'none'; });
-el('btn-save-away').addEventListener('click', () => saveAway(el('away-input').value.trim()));
-el('btn-clear-away').addEventListener('click', () => { el('away-input').value = ''; saveAway(''); });
-
-async function saveAway(message) {
-  try {
-    await apiPost('/away', { message }, true);
-    const dot = el('self-status-dot');
-    dot.className = 'status-dot ' + (message ? 'away' : 'online');
-    el('away-dialog').style.display = 'none';
-  } catch (e) {
-    console.error(e);
-  }
+.buddy-name {
+  font-size: 12px;
+  flex: 1;
 }
 
-// ── Add Buddy ──────────────────────────────────────────────────────────────
-el('btn-add-buddy').addEventListener('click', () => {
-  el('add-buddy-dialog').style.display = 'block';
-  el('add-buddy-dialog').style.top = '120px';
-  el('add-buddy-dialog').style.left = '280px';
-  focusWindow(el('add-buddy-dialog'));
-  el('add-buddy-msg').textContent = '';
-  el('add-buddy-input').value = '';
-});
-
-el('btn-close-add-buddy').addEventListener('click', () => { el('add-buddy-dialog').style.display = 'none'; });
-el('btn-do-add-buddy').addEventListener('click', doAddBuddy);
-el('add-buddy-input').addEventListener('keydown', e => { if (e.key === 'Enter') doAddBuddy(); });
-
-async function doAddBuddy() {
-  const username = el('add-buddy-input').value.trim().toLowerCase();
-  const msgEl = el('add-buddy-msg');
-  msgEl.textContent = '';
-  msgEl.className = 'dialog-msg';
-  if (!username) return;
-  try {
-    await apiPost('/buddy/add', { username }, true);
-    msgEl.className = 'dialog-msg success';
-    msgEl.textContent = `Added ${username}!`;
-    el('add-buddy-input').value = '';
-    buddies[username] = { username, online: false, status: 'offline', away_message: '' };
-    renderBuddyList();
-    setTimeout(() => { el('add-buddy-dialog').style.display = 'none'; }, 800);
-  } catch (e) {
-    msgEl.className = 'dialog-msg error';
-    msgEl.textContent = e.message;
-  }
+/* ── Chat Window ──────────────────────────────────────── */
+.chat-window {
+  width: 350px;
 }
 
-// ── Rooms ──────────────────────────────────────────────────────────────────
-el('btn-open-rooms').addEventListener('click', openRoomsList);
-el('btn-close-rooms').addEventListener('click', () => { el('rooms-window').style.display = 'none'; });
-el('btn-refresh-rooms').addEventListener('click', refreshRooms);
-el('btn-create-room').addEventListener('click', async () => {
-  const name = el('new-room-input').value.trim();
-  if (!name) return;
-  try {
-    await apiPost('/rooms', { name }, true);
-    el('new-room-input').value = '';
-    await refreshRooms();
-  } catch (e) { alert(e.message); }
-});
-
-async function openRoomsList() {
-  el('rooms-window').style.display = 'block';
-  el('rooms-window').style.top = '60px';
-  el('rooms-window').style.left = '300px';
-  focusWindow(el('rooms-window'));
-  await refreshRooms();
+.chat-with {
+  font-size: 12px;
+  padding: 4px;
+  border-bottom: 1px solid var(--win-shadow);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-async function refreshRooms() {
-  try {
-    const data = await apiGet('/rooms');
-    const list = el('rooms-list');
-    list.innerHTML = '';
-    if (data.rooms.length === 0) {
-      list.innerHTML = '<div style="padding:8px;font-size:11px;color:#808080;">No rooms yet. Create one below!</div>';
-      return;
-    }
-    data.rooms.forEach(room => {
-      const div = document.createElement('div');
-      div.className = 'room-entry';
-      div.innerHTML = `
-        <div class="room-entry-info">
-          <span class="room-entry-name">#${room.name}</span>
-          ${room.topic ? `<span class="room-entry-topic">${room.topic}</span>` : ''}
-        </div>
-        <span class="room-entry-count">${room.members.length} online</span>
-      `;
-      div.addEventListener('dblclick', () => {
-        openRoomWindow(room.name);
-        el('rooms-window').style.display = 'none';
-      });
-      list.appendChild(div);
-    });
-  } catch { }
+.chat-messages {
+  height: 200px;
+  overflow-y: auto;
+  padding: 4px;
+  background: #fff;
+  margin: 4px;
+  border: 1px solid;
+  border-color: #808080 #dfdfdf #dfdfdf #808080;
+  font-family: var(--font-msg);
 }
 
-// ── Sign Off ───────────────────────────────────────────────────────────────
-el('btn-signoff').addEventListener('click', doSignoff);
-
-function doSignoff() {
-  if (!confirm('Sign off from cIM?')) return;
-  localStorage.removeItem('cim_token');
-  localStorage.removeItem('cim_username');
-  if (ws) ws.close();
-  location.reload();
+.msg {
+  margin-bottom: 4px;
+  font-size: 13px;
 }
 
-// ── Start Menu ─────────────────────────────────────────────────────────────
-const startMenu = el('start-menu');
-
-el('start-btn').addEventListener('click', e => {
-  e.stopPropagation();
-  startMenu.classList.toggle('open');
-});
-
-document.addEventListener('click', () => startMenu.classList.remove('open'));
-startMenu.addEventListener('click', e => e.stopPropagation());
-
-function smenu(fn) { startMenu.classList.remove('open'); fn(); }
-
-el('smenu-buddy-list').addEventListener('click', () => smenu(() => {
-  el('buddy-list-window').style.display = 'block';
-  focusWindow(el('buddy-list-window'));
-}));
-el('smenu-rooms').addEventListener('click', () => smenu(() => openRoomsList()));
-el('smenu-away').addEventListener('click', () => smenu(() => {
-  el('away-dialog').style.display = 'block';
-  el('away-dialog').style.top = '80px';
-  el('away-dialog').style.left = '220px';
-  focusWindow(el('away-dialog'));
-}));
-el('smenu-add-buddy').addEventListener('click', () => smenu(() => {
-  el('add-buddy-dialog').style.display = 'block';
-  el('add-buddy-dialog').style.top = '80px';
-  el('add-buddy-dialog').style.left = '220px';
-  el('add-buddy-msg').textContent = '';
-  el('add-buddy-input').value = '';
-  focusWindow(el('add-buddy-dialog'));
-}));
-el('smenu-about').addEventListener('click', () => smenu(() => openAbout()));
-el('smenu-signoff').addEventListener('click', () => smenu(() => doSignoff()));
-
-// ── About Dialog ───────────────────────────────────────────────────────────
-function openAbout() {
-  const about = el('about-dialog');
-  about.style.display = 'block';
-  about.style.top = '80px';
-  about.style.left = '50%';
-  about.style.transform = 'translateX(-50%)';
-  el('about-username').textContent = myUsername || '—';
-  focusWindow(about);
+.msg-sender {
+  font-weight: bold;
 }
 
-el('btn-close-about').addEventListener('click', () => { el('about-dialog').style.display = 'none'; });
-el('btn-close-about-ok').addEventListener('click', () => { el('about-dialog').style.display = 'none'; });
+.msg.self .msg-sender {
+  color: #0000ff;
+}
+
+.msg.other .msg-sender {
+  color: #ff0000;
+}
+
+.chat-input-row {
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chat-input {
+  background: #fff;
+  border: 1px solid;
+  border-color: #808080 #dfdfdf #dfdfdf #808080;
+  color: #000;
+  font-family: var(--font-msg);
+  font-size: 13px;
+  padding: 4px;
+  outline: none;
+  resize: none;
+  height: 60px;
+}
+
+.chat-btn-row {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+/* ── Taskbar ──────────────────────────────────────────── */
+#taskbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 28px;
+  background: var(--win-bg);
+  border-top: 1px solid #fff;
+  display: none;
+  align-items: center;
+  padding: 2px;
+  gap: 4px;
+  z-index: 9999;
+  box-shadow: 0 -1px 0 #808080 inset;
+}
+
+#taskbar.active {
+  display: flex;
+}
+
+.start-btn {
+  height: 22px;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--win-bg);
+  border: 1px solid;
+  border-color: #fff #000 #000 #fff;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.taskbar-items {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+}
+
+.taskbar-item {
+  height: 22px;
+  padding: 0 8px;
+  background: var(--win-bg);
+  border: 1px solid;
+  border-color: #fff #000 #000 #fff;
+  cursor: pointer;
+  font-size: 11px;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+}
+
+.taskbar-item.active-win {
+  border-color: #000 #fff #fff #000;
+  background: #dfdfdf;
+  font-weight: bold;
+}
+
+.taskbar-tray {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
+  border: 1px solid;
+  border-color: #808080 #fff #fff #808080;
+  height: 22px;
+}
+
+.conn-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.conn-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #808080;
+}
+
+.conn-indicator.ws {
+  background: #00ff00;
+}
+
+.conn-indicator.rest {
+  background: #ffcc00;
+}
+
+.taskbar-clock {
+  font-size: 11px;
+}
+
+/* ── Disconnect banner ──────────────────────────────── */
+#disconnect-banner {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #ffffc0;
+  color: #000;
+  text-align: center;
+  padding: 2px;
+  font-size: 11px;
+  z-index: 99999;
+  border-bottom: 1px solid #808080;
+}
+
+#disconnect-banner.visible {
+  display: block;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+
+::-webkit-scrollbar-track {
+  background: #dfdfdf;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--win-bg);
+  border: 1px solid;
+  border-color: #fff #000 #000 #fff;
+}
+
+::-webkit-scrollbar-button {
+  background: var(--win-bg);
+  border: 1px solid;
+  border-color: #fff #000 #000 #fff;
+  width: 16px;
+  height: 16px;
+}
+/* ── Room Window ──────────────────────────────────────── */
+.room-window { width: 480px; }
+
+.room-layout {
+  display: flex;
+  height: 280px;
+  margin: 4px;
+  gap: 4px;
+}
+
+.room-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid;
+  border-color: #808080 #dfdfdf #dfdfdf #808080;
+  font-family: var(--font-msg);
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.room-members {
+  width: 100px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid;
+  border-color: #808080 #dfdfdf #dfdfdf #808080;
+  padding: 2px;
+}
+
+.room-members-header {
+  font-size: 10px;
+  font-weight: bold;
+  color: var(--text-dim);
+  border-bottom: 1px solid #808080;
+  padding: 2px 4px;
+  margin-bottom: 2px;
+}
+
+.room-member {
+  font-size: 12px;
+  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+.room-member:hover { background: #000080; color: #fff; }
+
+/* ── Send button (chat + room) ────────────────────────── */
+.send-btn {
+  min-width: 60px;
+  background: var(--win-bg);
+  border: 1px solid;
+  border-color: #fff #000 #000 #fff;
+  color: #000;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  padding: 4px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  align-self: flex-end;
+}
+.send-btn:active {
+  border-color: #000 #fff #fff #000;
+  padding-top: 5px;
+  padding-left: 9px;
+}
+
+/* ── Typing indicator ─────────────────────────────────── */
+.typing-indicator {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+  padding: 0 4px;
+  min-height: 14px;
+}
+
+/* ── Buddy away text ──────────────────────────────────── */
+.buddy-away-text {
+  font-size: 10px;
+  color: #808080;
+  font-style: italic;
+  padding: 0 8px 2px 26px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Dialog messages ──────────────────────────────────── */
+.dialog-msg { font-size: 11px; min-height: 14px; }
+.dialog-msg.error { color: #ff0000; }
+.dialog-msg.success { color: #008000; }
+
+/* ── Room list entries ────────────────────────────────── */
+.room-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 6px;
+  cursor: pointer;
+  border-bottom: 1px solid #dfdfdf;
+}
+.room-entry:hover { background: #000080; color: #fff; }
+.room-entry-name { font-size: 13px; font-weight: bold; }
+.room-entry-count { font-size: 11px; color: var(--text-dim); }
+.room-entry:hover .room-entry-count { color: #dfdfdf; }
+
+.room-create-row {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-top: 1px solid #808080;
+}
+
+/* fix chat input row to be horizontal */
+.chat-input-row {
+  flex-direction: row !important;
+  align-items: flex-end;
+}
+
+/* ── Start Menu ───────────────────────────────────────── */
+#start-menu {
+  display: none;
+  position: fixed;
+  bottom: 28px;
+  left: 2px;
+  width: 200px;
+  background: var(--win-bg);
+  border: 2px solid;
+  border-color: #dfdfdf #000 #000 #dfdfdf;
+  box-shadow: 2px 2px 0 #808080;
+  z-index: 99998;
+  user-select: none;
+}
+#start-menu.open { display: block; }
+
+.start-menu-header {
+  background: linear-gradient(to bottom, #000080, #1084d0);
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.start-menu-runner { font-size: 24px; }
+.start-menu-username {
+  color: #fff;
+  font-weight: bold;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
+
+.start-menu-items {
+  padding: 2px 0;
+}
+
+.start-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.start-menu-item:hover {
+  background: #000080;
+  color: #fff;
+}
+.start-menu-item.danger:hover {
+  background: #800000;
+  color: #fff;
+}
+.smenu-icon { font-size: 16px; width: 20px; text-align: center; }
+
+.start-menu-divider {
+  height: 1px;
+  background: #808080;
+  margin: 3px 0;
+  border-bottom: 1px solid #fff;
+}
+
+/* ── About Dialog ─────────────────────────────────────── */
+#about-dialog {
+  width: 360px;
+  display: none;
+}
+.about-body {
+  padding: 0;
+}
+.about-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+}
+.about-logo-icon { font-size: 48px; }
+.about-product {
+  font-size: 28px;
+  font-weight: bold;
+  letter-spacing: -1px;
+}
+.about-version { font-size: 12px; color: var(--text-dim); }
+.about-divider {
+  height: 1px;
+  background: #808080;
+  border-bottom: 1px solid #fff;
+  margin: 0 8px;
+}
+.about-info {
+  padding: 12px 16px;
+  font-size: 12px;
+  line-height: 1.6;
+  background: #fff;
+  border: 1px solid;
+  border-color: #808080 #dfdfdf #dfdfdf #808080;
+  margin: 8px;
+}
+.about-user-row {
+  padding: 8px 16px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* ── Rooms window improvements ────────────────────────── */
+#rooms-window { width: 300px; }
+
+.rooms-toolbar {
+  padding: 3px 6px;
+  font-size: 11px;
+  color: var(--text-dim);
+  border-bottom: 1px solid #808080;
+  background: #dfdfdf;
+}
+
+.rooms-body {
+  height: 200px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid;
+  border-color: #808080 #dfdfdf #dfdfdf #808080;
+  margin: 4px 4px 0 4px;
+}
+
+.rooms-footer {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-top: 1px solid #808080;
+}
+
+.room-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-bottom: 1px solid #dfdfdf;
+}
+.room-entry:hover { background: #000080; color: #fff; }
+.room-entry-info { display: flex; flex-direction: column; }
+.room-entry-name { font-size: 13px; font-weight: bold; }
+.room-entry-topic { font-size: 10px; color: #808080; }
+.room-entry:hover .room-entry-topic { color: #dfdfdf; }
+.room-entry-count {
+  font-size: 11px;
+  color: #808080;
+  white-space: nowrap;
+}
+.room-entry:hover .room-entry-count { color: #dfdfdf; }
+
+
+/* ── Emoji picker ─────────────────────────────────────── */
+.emoji-picker {
+  position: fixed;
+  width: 240px;
+  max-height: 220px;
+  background: var(--win-bg);
+  border: 2px solid;
+  border-color: #dfdfdf #000 #000 #dfdfdf;
+  box-shadow: 2px 2px 0 #808080;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+}
+
+.emoji-search {
+  border: none;
+  border-bottom: 1px solid #808080;
+  padding: 3px 5px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  outline: none;
+  background: #fff;
+}
+
+.emoji-grid {
+  overflow-y: auto;
+  padding: 3px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  flex: 1;
+}
+
+.emoji-btn {
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.emoji-btn:hover {
+  background: #000080;
+  border-color: #000080;
+}
+
+.emoji-btn img {
+  image-rendering: pixelated;
+  width: 11px;
+  height: 11px;
+}
+
+/* Emoji trigger button */
+.emoji-trigger {
+  width: 24px;
+  height: 100%;
+  min-height: 36px;
+  background: var(--win-bg);
+  border: 1px solid;
+  border-color: #fff #000 #000 #fff;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+}
+.emoji-trigger:active {
+  border-color: #000 #fff #fff #000;
+}
+
+/* Inline emoji images in messages */
+.chat-emoji {
+  width: 11px;
+  height: 11px;
+  image-rendering: pixelated;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+
+/* Fix chat-input-row to be horizontal with emoji btn */
+.chat-input-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch;
+  padding: 4px;
+  gap: 2px;
+  border-top: 1px solid #808080;
+}
+
+.chat-input {
+  flex: 1;
+}
