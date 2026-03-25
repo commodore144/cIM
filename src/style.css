@@ -1,19 +1,6 @@
 /* cIM — commodore. Instant Messenger */
 /* Retro Windows 95/98 / AIM aesthetics */
 
-
-@font-face {
-    font-family: 'RetroSans'; /*a name to be used later*/
-<<<<<<< HEAD
-    src: url('fonts/RetroSans.ttf') format('truetype'); /*URL to font*/
-    font-style: normal;
-    font-weight: 2000
-=======
-    src: url('/fonts/RetroSans.ttf'); /*URL to font*/
->>>>>>> parent of 109c0a9 (yay i sure love adding a dot)
-}
-
-
 :root {
   --bg: #008080;
   /* Teal desktop background */
@@ -43,8 +30,8 @@
   --outset: 1px 1px 0px #fff inset, -1px -1px 0px #808080 inset, 2px 2px 0px #dfdfdf inset, -2px -2px 0px #000 inset;
   --inset: 1px 1px 0px #808080 inset, -1px -1px 0px #fff inset, 2px 2px 0px #000 inset, -2px -2px 0px #dfdfdf inset;
 
-  --font-ui: 'RetroSans';
-  --font-msg: 'RetroSans';
+  --font-ui: 'Tahoma', 'Segoe UI', 'MS Sans Serif', sans-serif;
+  --font-msg: 'Arial', sans-serif;
 }
 
 * {
@@ -57,10 +44,9 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: 13px;
   min-height: 100vh;
   overflow: hidden;
-  
 }
 
 /* ── Desktop ──────────────────────────────────────────── */
@@ -116,7 +102,7 @@ body {
 .titlebar-title {
   flex: 1;
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: 12px;
   font-weight: bold;
   color: #dfdfdf;
   white-space: nowrap;
@@ -141,7 +127,7 @@ body {
   border-color: #fff #000 #000 #fff;
   color: #000;
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: 10px;
   font-weight: bold;
   cursor: pointer;
   display: flex;
@@ -447,7 +433,6 @@ body {
   right: 0;
   height: 28px;
   background: var(--win-bg);
-  font-family: var(--font-ui)
   border-top: 1px solid #fff;
   display: none;
   align-items: center;
@@ -471,14 +456,11 @@ body {
   border: 1px solid;
   border-color: #fff #000 #000 #fff;
   font-weight: bold;
-  font-family: var(--font-ui);
-  font-size: 15px;
   cursor: pointer;
 }
 
 .taskbar-items {
   display: flex;
-  font-family: RetroSans;
   gap: 2px;
   flex: 1;
 }
@@ -490,8 +472,7 @@ body {
   border: 1px solid;
   border-color: #fff #000 #000 #fff;
   cursor: pointer;
-  font-size: 13px;
-  font-family: var(--font-ui)
+  font-size: 11px;
   max-width: 150px;
   overflow: hidden;
   text-overflow: ellipsis;
