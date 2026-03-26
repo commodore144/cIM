@@ -1,108 +1,52 @@
 // cIM — commodore. Instant Messenger
-// Frontend App Logic
 
-const API = 'https://inspire.tail0e8d21.ts.net/cim';
+const API        = 'https://inspire.tail0e8d21.ts.net/cim';
 const EMOJI_PATH = 'src/emojis/';
 
-// ── Emoji List ──────────────────────────────────────────────────────────────
-const EMOJIS = [
-  // Faces & emotions
-  'face-with-tears-of-joy','grinning-face-with-big-eyes','grinning-face-with-sweat',
-  'grinning-squinting-face','beaming-face-with-smiling-eyes','smiling-face-with-smiling-eyes',
-  'smiling-face-with-halo','smiling-face-with-heart-eyes','smiling-face-with-hearts',
-  'smiling-face-with-sunglasses','smiling-face-with-tear','smiling-face-with-horns',
-  'slightly-smiling-face','upside-down-face','winking-face','winking-face-with-tongue',
-  'squinting-face-with-tongue','face-with-tongue','zany-face','money-mouth-face',
-  'nerd-face','cowboy-hat-face','partying-face','disguised-face','face-with-monocle',
-  'thinking-face','saluting-face','melting-face','shaking-face','half-moon-face',
-  'face-with-raised-eyebrow','face-with-rolling-eyes','grimacing-face','face-without-mouth',
-  'dotted-line-face','smirking-face','neutral-face','expressionless-face',
-  'persevering-face','confused-face','worried-face','slightly-frowning-face',
-  'frowning-face','face-with-head-bandage','face-with-thermometer','face-with-medical-mask',
-  'sneezing-face','hot-face','cold-face','woozy-face','face-with-crossed-out-eyes',
-  'face-with-spiral-eyes','exploding-head','face-vomiting','face-savoring-food',
-  'drooling-face','sleeping-face','face-with-symbols-on-mouth','face-blowing-a-kiss',
-  'kissing-face','kissing-face-with-closed-eyes','kissing-face-with-smiling-eyes',
-  'face-holding-back-tears','loudly-crying-face','crying-face','hushed-face',
-  'yawning-face','fearful-face','flushed-face','pleading-face','anxious-face-with-sweat',
-  'sad-but-relieved-face','disappointed-face','weary-face','tired-face',
-  'nauseated-face','angry-face','enraged-face','angry-face-with-horns','skull',
-  'lying-face','relieved-face','pensive-face','star-struck','new-moon-face',
-  // Cats
-  'grinning-cat','grinning-cat-with-smiling-eyes','cat-with-tears-of-joy',
-  'smiling-cat-with-heart-eyes','cat-with-wry-smile','kissing-cat','weary-cat',
-  'crying-cat','pouting-cat',
-  // Hands & body
-  'thumbs-up','thumbs-down','ok-hand','clapping-hands','raising-hands','waving-hand',
-  'folded-hands','flexed-biceps','oncoming-fist','backhand-index-pointing-up',
-  'backhand-index-pointing-down','backhand-index-pointing-left','backhand-index-pointing-right',
-  // Symbols & misc
-  'red-heart','orange-heart','yellow-heart','green-heart','blue-heart','purple-heart',
-  'brown-heart','black-heart','white-heart','pink-heart','cyan-heart','mending-heart',
-  'broken-heart','fire','sparkles','star','dizzy','thought-bubble','speech-balloon',
-  'right-anger-bubble','eye-in-speech-bubble','zzz','cyclone','high-voltage',
-  'hundred-points','check-mark','cross-mark','exclamation-question-mark',
-  'double-exclamation-mark','red-exclamation-mark','white-exclamation-mark',
-  'red-question-mark','white-question-mark','warning','stop-sign','no-entry',
-  'prohibited','no-bicycles','no-littering','no-mobile-phones','non-potable-water',
-  'no-one-under-eighteen','no-pedestrians','no-smoking','anger-symbol','police-car-light',
-  // Animals
-  'cat-face','bird','duck','baby-chick','hatching-chick','hedgehog','snake',
-  'turtle','crab','sauropod','dinosaur','spouting-whale','ghost','alien',
-  'alien-monster','robot','moai',
-  // Food & drink
-  'red-apple','green-apple','pear','peach','cherries','banana','watermelon',
-  'tangerine','lemon','lime','kiwi-fruit','pineapple','avacado','tomato','eggplant',
-  'cucumber','carrot','garlic','onion','pepper','potato','cactus','mushroom',
-  'four-leaf-clover','cherry-blossom','pizza','bacon','baguette','croissant',
-  'waffle','pancakes','french-fries','popcorn','poultry-leg','meat-on-bone',
-  'green-salad','shallow-pan-of-food','sushi','rice-ball','rice-cracker',
-  'fish-cake-with-swirl','doughnut','cookie','chocolate-bar','candy','lollipop',
-  'cupcake','pie','ice-cream','coconut','egg','salt','glass-of-milk','wine-glass',
-  'beverage-box',
-  // Objects
-  'gem-stone','money-bag','crystal-ball','game-die','pool-8-ball','puzzle-piece',
-  'bowling','boxing-glove','tennis-ball','rocket','light-bulb','magnet','key',
-  'locked','floppy-disk','toolbox','fire-extinguisher','roll-of-paper','soap',
-  'tooth','bone','pill','camera','camera-with-flash','compass','globe-meridians',
-  'rainbow','snowman','christmas-tree','jack-o-lantern','party-popper',
-  'triangular-flag','triangular-ruler','thread','yarn','socks','billed-cap',
-  'crown','brain','headstone','wastebasket','file-folder','open-file-folder',
-  'speaker-high','hear-no-evil-monkey','see-no-evil-monkey','speak-no-evil-monkey',
-  // Medals
-  '1st-place-medal','2nd-place-medal','3rd-place-medal',
-  // Custom
-  '_custom_alert','_custom_blink','_custom_bubble','_custom_content','_custom_unimpressed',
-  // Pistol (why not)
-  'pistol',
-];
-
 // ── State ──────────────────────────────────────────────────────────────────
-let token = localStorage.getItem('cim_token') || null;
-let myUsername = localStorage.getItem('cim_username') || null;
-let ws = null;
+let token       = localStorage.getItem('cim_token')    || null;
+let myUsername  = localStorage.getItem('cim_username') || null;
+let ws          = null;
 let wsReconnectTimer = null;
-let commMode = 'ws'; // or 'rest'
-let pollTimer = null;
-let buddies = {}; // username -> {online, status, away_message}
-let openChats = {}; // username -> {winEl, unread}
-let openRooms = {}; // room name -> {winEl}
-let zCounter = 10;
-let activeEmojiPicker = null; // currently open picker
+let commMode    = 'ws';
+let pollTimer   = null;
+let buddies     = {};
+let openChats   = {};
+let openRooms   = {};
+let zCounter    = 10;
+let soundEnabled = localStorage.getItem('cim_sound') !== 'off';
+let totalUnread  = 0;
+let activeEmojiPicker = null;
+
+// ── Emoji state (loaded dynamically from emojis.json) ─────────────────────
+let EMOJIS    = [];
+let EMOJI_SET = new Set();
+let recentEmojis = JSON.parse(localStorage.getItem('cim_recent_emojis') || '[]');
+
+async function loadEmojis() {
+  try {
+    const res = await fetch(`${EMOJI_PATH}emojis.json`);
+    EMOJIS    = await res.json();
+    EMOJI_SET = new Set(EMOJIS);
+  } catch (e) {
+    console.warn('Could not load emojis.json:', e);
+  }
+}
 
 // ── Audio ──────────────────────────────────────────────────────────────────
-const AudioCtx = window.AudioContext || window.webkitAudioContext;
+const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
 
 function getAudioCtx() {
-  if (!audioCtx) audioCtx = new AudioCtx();
+  if (!audioCtx) audioCtx = new AudioCtxClass();
   return audioCtx;
 }
 
 function playTone(freq, duration, type = 'sine', vol = 0.15) {
+  if (!soundEnabled) return;
   try {
-    const ctx = getAudioCtx();
-    const osc = ctx.createOscillator();
+    const ctx  = getAudioCtx();
+    const osc  = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = type;
     osc.frequency.value = freq;
@@ -115,21 +59,9 @@ function playTone(freq, duration, type = 'sine', vol = 0.15) {
   } catch { }
 }
 
-function playDoorSound() {
-  playTone(800, 0.08, 'square', 0.1);
-  setTimeout(() => playTone(400, 0.12, 'square', 0.1), 80);
-}
-
-function playMsgSound() {
-  playTone(880, 0.06, 'sine', 0.12);
-  setTimeout(() => playTone(1100, 0.08, 'sine', 0.12), 60);
-}
-
-function playBuddyOnSound() {
-  playTone(880, 0.08, 'sine', 0.1);
-  setTimeout(() => playTone(1100, 0.06, 'sine', 0.1), 90);
-  setTimeout(() => playTone(1320, 0.1, 'sine', 0.1), 170);
-}
+function playDoorSound()    { playTone(800, 0.08, 'square', 0.1); setTimeout(() => playTone(400, 0.12, 'square', 0.1), 80); }
+function playMsgSound()     { playTone(880, 0.06, 'sine', 0.12);  setTimeout(() => playTone(1100, 0.08, 'sine', 0.12), 60); }
+function playBuddyOnSound() { playTone(880, 0.08, 'sine', 0.1);   setTimeout(() => playTone(1100, 0.06, 'sine', 0.1), 90); setTimeout(() => playTone(1320, 0.1, 'sine', 0.1), 170); }
 
 // ── Utilities ──────────────────────────────────────────────────────────────
 function el(id) { return document.getElementById(id); }
@@ -146,10 +78,33 @@ function updateClock() {
 setInterval(updateClock, 5000);
 updateClock();
 
-// ── Emoji rendering ────────────────────────────────────────────────────────
-const EMOJI_SET = new Set(EMOJIS);
+function updateTitle() {
+  document.title = totalUnread > 0
+    ? `(${totalUnread}) cIM — ${myUsername || ''}`
+    : `cIM — ${myUsername || 'Sign On'}`;
+}
 
-// Convert :shortcode: in text to <img> tags. Text is pre-escaped.
+// ── Browser Notifications ─────────────────────────────────────────────────
+function requestNotifPerms() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function sendNotif(title, body) {
+  if (document.hasFocus()) return;
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  new Notification(title, { body, icon: `${EMOJI_PATH}speech-balloon.png` });
+}
+
+// ── Emoji rendering ────────────────────────────────────────────────────────
+// Fuzzy: all space-separated words must appear somewhere in the emoji name
+function emojiMatches(name, query) {
+  if (!query) return true;
+  const parts = query.toLowerCase().split(/\s+/).filter(Boolean);
+  return parts.every(part => name.includes(part));
+}
+
 function renderContent(rawText) {
   const escaped = rawText
     .replace(/&/g, '&amp;')
@@ -163,48 +118,63 @@ function renderContent(rawText) {
   });
 }
 
-// Insert :shortcode: at cursor in a textarea
 function insertAtCursor(textarea, text) {
   const start = textarea.selectionStart;
-  const end = textarea.selectionEnd;
-  const val = textarea.value;
-  textarea.value = val.slice(0, start) + text + val.slice(end);
+  const end   = textarea.selectionEnd;
+  textarea.value = textarea.value.slice(0, start) + text + textarea.value.slice(end);
   textarea.selectionStart = textarea.selectionEnd = start + text.length;
   textarea.focus();
 }
 
+function addRecentEmoji(name) {
+  recentEmojis = [name, ...recentEmojis.filter(e => e !== name)].slice(0, 24);
+  localStorage.setItem('cim_recent_emojis', JSON.stringify(recentEmojis));
+}
+
 // ── Emoji Picker ───────────────────────────────────────────────────────────
 function createEmojiPicker(inputEl) {
-  // Close any existing picker
-  if (activeEmojiPicker) {
-    activeEmojiPicker.remove();
-    activeEmojiPicker = null;
-  }
+  if (activeEmojiPicker) { activeEmojiPicker.remove(); activeEmojiPicker = null; }
 
   const picker = document.createElement('div');
   picker.className = 'emoji-picker';
 
-  // Search bar
+  // Search
   const search = document.createElement('input');
   search.type = 'text';
   search.className = 'emoji-search';
-  search.placeholder = 'Search emojis...';
+  search.placeholder = 'Search... (e.g. "smiling face")';
   picker.appendChild(search);
 
-  // Grid
+  // Tabs
+  const tabs = document.createElement('div');
+  tabs.className = 'emoji-tabs';
+  const tabRecent = document.createElement('button');
+  tabRecent.className = 'emoji-tab active';
+  tabRecent.textContent = 'Recent';
+  const tabAll = document.createElement('button');
+  tabAll.className = 'emoji-tab';
+  tabAll.textContent = `All (${EMOJIS.length})`;
+  tabs.appendChild(tabRecent);
+  tabs.appendChild(tabAll);
+  picker.appendChild(tabs);
+
   const grid = document.createElement('div');
   grid.className = 'emoji-grid';
   picker.appendChild(grid);
 
+  let currentTab = 'recent';
+
   function renderGrid(filter = '') {
     grid.innerHTML = '';
-    const filtered = filter
-      ? EMOJIS.filter(e => e.includes(filter.toLowerCase()))
-      : EMOJIS;
+    const hasFilter = filter.trim().length > 0;
+    const source    = (currentTab === 'recent' && !hasFilter) ? recentEmojis : EMOJIS;
+    const filtered  = hasFilter ? EMOJIS.filter(e => emojiMatches(e, filter)) : source;
+
     if (filtered.length === 0) {
-      grid.innerHTML = '<div style="padding:6px;font-size:11px;color:#808080;">No results</div>';
+      grid.innerHTML = `<div style="padding:6px;font-size:11px;color:#808080;">${hasFilter ? 'No results' : 'No recent emojis yet'}</div>`;
       return;
     }
+
     filtered.forEach(name => {
       const btn = document.createElement('button');
       btn.className = 'emoji-btn';
@@ -212,12 +182,11 @@ function createEmojiPicker(inputEl) {
       const img = document.createElement('img');
       img.src = `${EMOJI_PATH}${name}.png`;
       img.alt = `:${name}:`;
-      img.width = 11;
-      img.height = 11;
       btn.appendChild(img);
       btn.addEventListener('mousedown', e => {
-        e.preventDefault(); // don't blur textarea
+        e.preventDefault();
         insertAtCursor(inputEl, `:${name}:`);
+        addRecentEmoji(name);
         picker.remove();
         activeEmojiPicker = null;
       });
@@ -225,23 +194,36 @@ function createEmojiPicker(inputEl) {
     });
   }
 
-  renderGrid();
-  search.addEventListener('input', () => renderGrid(search.value));
+  tabRecent.addEventListener('mousedown', e => {
+    e.preventDefault();
+    currentTab = 'recent';
+    tabRecent.classList.add('active');
+    tabAll.classList.remove('active');
+    renderGrid(search.value);
+  });
 
-  // Position above the input
+  tabAll.addEventListener('mousedown', e => {
+    e.preventDefault();
+    currentTab = 'all';
+    tabAll.classList.add('active');
+    tabRecent.classList.remove('active');
+    renderGrid(search.value);
+  });
+
+  search.addEventListener('input', () => renderGrid(search.value));
+  renderGrid();
+
   document.body.appendChild(picker);
+
+  // Position above input, flip down if off top of screen
   const rect = inputEl.getBoundingClientRect();
   picker.style.left = rect.left + 'px';
-  picker.style.top = (rect.top - picker.offsetHeight - 4) + 'px';
-
-  // If it goes off screen upward, flip below
-  if (parseFloat(picker.style.top) < 0) {
-    picker.style.top = (rect.bottom + 4) + 'px';
-  }
+  const top = rect.top - 264;
+  picker.style.top = (top < 4 ? rect.bottom + 4 : top) + 'px';
 
   activeEmojiPicker = picker;
+  search.focus();
 
-  // Close on outside click
   setTimeout(() => {
     function outsideClick(e) {
       if (!picker.contains(e.target) && e.target !== inputEl) {
@@ -258,27 +240,17 @@ function createEmojiPicker(inputEl) {
 async function apiPost(path, body, auth = false) {
   const headers = { 'Content-Type': 'application/json' };
   if (auth && token) headers['Authorization'] = `Bearer ${token}`;
-  const res = await fetch(API + path, { method: 'POST', headers, body: JSON.stringify(body) });
+  const res  = await fetch(API + path, { method: 'POST', headers, body: JSON.stringify(body) });
   const data = await res.json();
   if (!res.ok) throw new Error(data.detail || 'Request failed');
   return data;
 }
 
 async function apiGet(path) {
-  const res = await fetch(API + path, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
+  const res  = await fetch(API + path, { headers: { 'Authorization': `Bearer ${token}` } });
   const data = await res.json();
   if (!res.ok) throw new Error(data.detail || 'Request failed');
   return data;
-}
-
-async function apiDelete(path) {
-  const res = await fetch(API + path, {
-    method: 'DELETE',
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  return res.ok;
 }
 
 // ── Window management ──────────────────────────────────────────────────────
@@ -294,12 +266,8 @@ function makeDraggable(winEl, handleEl) {
   });
   document.addEventListener('mousemove', e => {
     if (!dragging) return;
-    let x = e.clientX - ox;
-    let y = e.clientY - oy;
-    x = Math.max(0, Math.min(x, window.innerWidth - winEl.offsetWidth));
-    y = Math.max(0, Math.min(y, window.innerHeight - 28 - winEl.offsetHeight));
-    winEl.style.left = x + 'px';
-    winEl.style.top = y + 'px';
+    winEl.style.left = Math.max(0, Math.min(e.clientX - ox, window.innerWidth  - winEl.offsetWidth))  + 'px';
+    winEl.style.top  = Math.max(0, Math.min(e.clientY - oy, window.innerHeight - 28 - winEl.offsetHeight)) + 'px';
   });
   document.addEventListener('mouseup', () => { dragging = false; });
   winEl.addEventListener('mousedown', () => focusWindow(winEl));
@@ -319,32 +287,45 @@ function placeWindowCascade() {
 }
 
 function updateTaskbar() {
-  const items = el('taskbar-items');
+  const items   = el('taskbar-items');
   items.innerHTML = '';
   const focused = document.querySelector('.cim-window.focused');
 
   addTaskbarItem('💬 Buddy List', el('buddy-list-window'), focused === el('buddy-list-window'));
 
+  totalUnread = 0;
   Object.entries(openChats).forEach(([user, chat]) => {
-    const unread = chat.unread ? ` (${chat.unread})` : '';
-    addTaskbarItem(`✉ ${user}${unread}`, chat.winEl, focused === chat.winEl);
+    totalUnread += chat.unread || 0;
+    addTaskbarItem(chat.unread ? `✉ ${user} (${chat.unread})` : `✉ ${user}`, chat.winEl, focused === chat.winEl);
   });
-
   Object.entries(openRooms).forEach(([room, r]) => {
     addTaskbarItem(`# ${room}`, r.winEl, focused === r.winEl);
   });
+
+  updateTitle();
 }
 
 function addTaskbarItem(label, winEl, active) {
   const btn = document.createElement('button');
   btn.className = 'taskbar-item' + (active ? ' active-win' : '');
   btn.textContent = label;
-  btn.addEventListener('click', () => {
-    winEl.style.display = 'block';
-    focusWindow(winEl);
-  });
+  btn.addEventListener('click', () => { winEl.style.display = 'block'; focusWindow(winEl); });
   el('taskbar-items').appendChild(btn);
 }
+
+// ── Sound toggle ───────────────────────────────────────────────────────────
+function updateSoundBtn() {
+  const btn = el('sound-toggle');
+  if (!btn) return;
+  btn.textContent = soundEnabled ? '🔊' : '🔇';
+  btn.title = soundEnabled ? 'Sound ON — click to mute' : 'Sound OFF — click to unmute';
+}
+
+el('sound-toggle')?.addEventListener('click', () => {
+  soundEnabled = !soundEnabled;
+  localStorage.setItem('cim_sound', soundEnabled ? 'on' : 'off');
+  updateSoundBtn();
+});
 
 // ── Connection Mode Toggle ─────────────────────────────────────────────────
 function setCommMode(mode) {
@@ -380,7 +361,7 @@ el('btn-show-register').addEventListener('click', () => {
   el('btn-show-register').addEventListener('click', () => location.reload(), { once: true });
   el('btn-login').textContent = 'Register';
   el('btn-login').onclick = doRegister;
-  document.querySelector('#login-window .titlebar-title').textContent = 'cIM — New User';
+  el('login-window').querySelector('.titlebar-title').textContent = 'cIM — New User';
 });
 
 async function doLogin() {
@@ -390,15 +371,11 @@ async function doLogin() {
   if (!username || !password) { el('login-error').textContent = 'Fill in all fields'; return; }
   try {
     const data = await apiPost('/login', { username, password });
-    token = data.token;
-    myUsername = data.username;
+    token = data.token; myUsername = data.username;
     localStorage.setItem('cim_token', token);
     localStorage.setItem('cim_username', myUsername);
-    document.title = `cIM — ${myUsername}`;
     enterDesktop();
-  } catch (e) {
-    el('login-error').textContent = e.message;
-  }
+  } catch (e) { el('login-error').textContent = e.message; }
 }
 
 async function doRegister() {
@@ -406,18 +383,14 @@ async function doRegister() {
   const password = el('login-password').value;
   el('login-error').textContent = '';
   if (!username || !password) { el('login-error').textContent = 'Fill in all fields'; return; }
-  if (username.length < 3) { el('login-error').textContent = 'Screen name must be 3+ chars'; return; }
+  if (username.length < 3)    { el('login-error').textContent = 'Screen name must be 3+ chars'; return; }
   try {
     const data = await apiPost('/register', { username, password });
-    token = data.token;
-    myUsername = data.username;
+    token = data.token; myUsername = data.username;
     localStorage.setItem('cim_token', token);
     localStorage.setItem('cim_username', myUsername);
-    document.title = `cIM — ${myUsername}`;
     enterDesktop();
-  } catch (e) {
-    el('login-error').textContent = e.message;
-  }
+  } catch (e) { el('login-error').textContent = e.message; }
 }
 
 // ── Desktop init ───────────────────────────────────────────────────────────
@@ -425,25 +398,25 @@ function enterDesktop() {
   el('login-screen').style.display = 'none';
   el('desktop').classList.add('active');
   el('taskbar').classList.add('active');
-  el('self-name').textContent = myUsername;
+  el('self-name').textContent          = myUsername;
   el('start-menu-username').textContent = myUsername;
 
   makeDraggable(el('buddy-list-window'), el('buddy-titlebar'));
-  makeDraggable(el('away-dialog'), el('away-titlebar'));
+  makeDraggable(el('away-dialog'),       el('away-titlebar'));
   makeDraggable(el('add-buddy-dialog'), el('add-buddy-titlebar'));
-  makeDraggable(el('rooms-window'), el('rooms-titlebar'));
-  makeDraggable(el('about-dialog'), el('about-titlebar'));
+  makeDraggable(el('rooms-window'),     el('rooms-titlebar'));
+  makeDraggable(el('about-dialog'),     el('about-titlebar'));
+
+  updateSoundBtn();
+  updateTitle();
+  requestNotifPerms();
+  loadEmojis();
 
   focusWindow(el('buddy-list-window'));
-  const savedMode = localStorage.getItem('cim_commmode') || 'ws';
-  setCommMode(savedMode);
+  setCommMode(localStorage.getItem('cim_commmode') || 'ws');
 }
 
-// Auto-login if token exists
-if (token && myUsername) {
-  document.title = `cIM — ${myUsername}`;
-  enterDesktop();
-}
+if (token && myUsername) enterDesktop();
 
 // ── WebSocket ──────────────────────────────────────────────────────────────
 function connectWS() {
@@ -452,34 +425,16 @@ function connectWS() {
   const wsUrl = API.replace('https://', 'wss://').replace('http://', 'ws://');
   ws = new WebSocket(`${wsUrl}/ws?token=${token}`);
 
-  ws.onopen = () => {
-    el('disconnect-banner').classList.remove('visible');
-    if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
-  };
-
-  ws.onmessage = e => {
-    try { handleWSMessage(JSON.parse(e.data)); }
-    catch (err) { console.error('WS parse error', err); }
-  };
-
-  ws.onclose = () => {
-    if (commMode !== 'ws') return;
-    el('disconnect-banner').classList.add('visible');
-    wsReconnectTimer = setTimeout(connectWS, 3000);
-  };
-
-  ws.onerror = () => {
-    if (ws) ws.close();
-    console.log('WS error, falling back to REST');
-    setCommMode('rest');
-  };
+  ws.onopen    = () => { el('disconnect-banner').classList.remove('visible'); if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; } };
+  ws.onmessage = e => { try { handleWSMessage(JSON.parse(e.data)); } catch (err) { console.error(err); } };
+  ws.onclose   = () => { if (commMode !== 'ws') return; el('disconnect-banner').classList.add('visible'); wsReconnectTimer = setTimeout(connectWS, 3000); };
+  ws.onerror   = () => { if (ws) ws.close(); setCommMode('rest'); };
 }
 
 async function startRESTPolling() {
   if (commMode !== 'rest') return;
   try {
-    const data = await apiPost('/poll/connect', {}, true);
-    handleWSMessage(data);
+    handleWSMessage(await apiPost('/poll/connect', {}, true));
     pollLoop();
   } catch (e) {
     console.error('Poll connect failed', e);
@@ -491,41 +446,28 @@ async function pollLoop() {
   if (commMode !== 'rest') return;
   try {
     const data = await apiGet('/poll/messages');
-    if (data.messages) data.messages.forEach(msg => handleWSMessage(msg));
+    if (data.messages) data.messages.forEach(handleWSMessage);
     el('disconnect-banner').classList.remove('visible');
     pollLoop();
-  } catch (e) {
+  } catch {
     el('disconnect-banner').classList.add('visible');
     pollTimer = setTimeout(pollLoop, 3000);
   }
 }
 
 function wsSend(msg) {
-  if (commMode === 'ws' && ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify(msg));
-  } else if (commMode === 'rest') {
-    handleRestSend(msg);
-  }
+  if (commMode === 'ws' && ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+  else if (commMode === 'rest') handleRestSend(msg);
 }
 
 async function handleRestSend(msg) {
   try {
-    if (msg.type === 'dm') {
-      await apiPost('/poll/dm', { to: msg.to, content: msg.content }, true);
-      appendDMMessage(msg.to, 'self', myUsername, msg.content);
-    } else if (msg.type === 'room_message') {
-      await apiPost('/poll/room/message', { room: msg.room, content: msg.content }, true);
-    } else if (msg.type === 'join_room') {
-      const data = await apiPost('/poll/room/join', { room: msg.room }, true);
-      handleWSMessage(data);
-    } else if (msg.type === 'leave_room') {
-      await apiPost('/poll/room/leave', { room: msg.room }, true);
-    } else if (msg.type === 'typing') {
-      await apiPost('/poll/typing', { to: msg.to }, true);
-    }
-  } catch (e) {
-    console.error('Rest send failed', e);
-  }
+    if      (msg.type === 'dm')           { await apiPost('/poll/dm', { to: msg.to, content: msg.content }, true); appendDMMessage(msg.to, 'self', myUsername, msg.content); }
+    else if (msg.type === 'room_message') await apiPost('/poll/room/message', { room: msg.room, content: msg.content }, true);
+    else if (msg.type === 'join_room')    handleWSMessage(await apiPost('/poll/room/join',  { room: msg.room }, true));
+    else if (msg.type === 'leave_room')   await apiPost('/poll/room/leave', { room: msg.room }, true);
+    else if (msg.type === 'typing')       await apiPost('/poll/typing', { to: msg.to }, true);
+  } catch (e) { console.error('Rest send failed', e); }
 }
 
 // ── Message handler ────────────────────────────────────────────────────────
@@ -533,47 +475,29 @@ function handleWSMessage(msg) {
   switch (msg.type) {
     case 'init':
       el('self-name').textContent = msg.username;
-      if (msg.away_message) {
-        el('self-status-dot').className = 'status-dot away';
-        el('away-input').value = msg.away_message;
-      }
+      if (msg.away_message) { el('self-status-dot').className = 'status-dot away'; el('away-input').value = msg.away_message; }
       msg.buddies.forEach(b => { buddies[b.username] = b; });
       renderBuddyList();
       break;
-    case 'dm':
-      receiveDM(msg.from, msg.content);
-      break;
-    case 'dm_echo':
-      appendDMMessage(msg.to, 'self', myUsername, msg.content);
-      break;
-    case 'typing':
-      showTyping(msg.from);
-      break;
-    case 'presence':
-      handlePresence(msg.user, msg.status, msg.away_message);
-      break;
+    case 'dm':                receiveDM(msg.from, msg.content); break;
+    case 'dm_echo':           appendDMMessage(msg.to, 'self', myUsername, msg.content); break;
+    case 'typing':            showTyping(msg.from); break;
+    case 'presence':          handlePresence(msg.user, msg.status, msg.away_message); break;
     case 'room_message':
-    case 'room_message_echo':
-      appendRoomMessage(msg.room, msg.from, msg.content);
-      break;
-    case 'room_joined':
-      onRoomJoined(msg.room, msg.members);
-      break;
-    case 'room_event':
-      handleRoomEvent(msg);
-      break;
+    case 'room_message_echo': appendRoomMessage(msg.room, msg.from, msg.content); break;
+    case 'room_joined':       onRoomJoined(msg.room, msg.members); break;
+    case 'room_event':        handleRoomEvent(msg); break;
   }
 }
 
 // ── Buddy List ─────────────────────────────────────────────────────────────
 function renderBuddyList() {
-  const body = el('buddy-list-body');
+  const body    = el('buddy-list-body');
   const online  = Object.values(buddies).filter(b => b.online && b.status !== 'away');
   const away    = Object.values(buddies).filter(b => b.online && b.status === 'away');
   const offline = Object.values(buddies).filter(b => !b.online);
 
   body.innerHTML = '';
-
   if (Object.keys(buddies).length === 0) {
     body.innerHTML = '<div style="padding:8px 6px;font-size:11px;color:#808080;">No buddies yet.<br>Add someone to get started.</div>';
     return;
@@ -582,12 +506,11 @@ function renderBuddyList() {
   if (online.length)  renderBuddyGroup(body, `Online (${online.length})`,  online,  'online');
   if (away.length)    renderBuddyGroup(body, `Away (${away.length})`,      away,    'away');
   if (offline.length) renderBuddyGroup(body, `Offline (${offline.length})`,offline, 'offline');
-
   updateTaskbar();
 }
 
 function renderBuddyGroup(container, title, list, statusClass) {
-  const group = document.createElement('div');
+  const group  = document.createElement('div');
   group.className = 'buddy-group';
 
   const header = document.createElement('div');
@@ -603,6 +526,7 @@ function renderBuddyGroup(container, title, list, statusClass) {
     entry.className = `buddy-entry ${statusClass}`;
     entry.innerHTML = `<div class="status-dot ${statusClass}"></div><span class="buddy-name">${buddy.username}</span>`;
     entry.addEventListener('dblclick', () => openDMWindow(buddy.username));
+    entry.addEventListener('contextmenu', e => { e.preventDefault(); showBuddyContextMenu(e.clientX, e.clientY, buddy.username); });
     items.appendChild(entry);
 
     if (buddy.away_message) {
@@ -625,23 +549,62 @@ function renderBuddyGroup(container, title, list, statusClass) {
   container.appendChild(group);
 }
 
+// ── Buddy Context Menu ─────────────────────────────────────────────────────
+function showBuddyContextMenu(x, y, username) {
+  document.querySelectorAll('.context-menu').forEach(m => m.remove());
+
+  const menu = document.createElement('div');
+  menu.className = 'context-menu';
+  menu.style.left = x + 'px';
+  menu.style.top  = y + 'px';
+
+  [
+    { label: '✉ Send Message', fn: () => openDMWindow(username) },
+    { sep: true },
+    { label: '✕ Remove Buddy', fn: () => removeBuddy(username), danger: true },
+  ].forEach(item => {
+    if (item.sep) { const s = document.createElement('div'); s.className = 'context-menu-sep'; menu.appendChild(s); return; }
+    const btn = document.createElement('div');
+    btn.className = 'context-menu-item' + (item.danger ? ' danger' : '');
+    btn.textContent = item.label;
+    btn.addEventListener('mousedown', e => { e.preventDefault(); menu.remove(); item.fn(); });
+    menu.appendChild(btn);
+  });
+
+  document.body.appendChild(menu);
+  if (x + menu.offsetWidth  > window.innerWidth)  menu.style.left = (x - menu.offsetWidth)  + 'px';
+  if (y + menu.offsetHeight > window.innerHeight) menu.style.top  = (y - menu.offsetHeight) + 'px';
+
+  setTimeout(() => {
+    function close(e) { if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('mousedown', close); } }
+    document.addEventListener('mousedown', close);
+  }, 0);
+}
+
+async function removeBuddy(username) {
+  if (!confirm(`Remove ${username} from your buddy list?`)) return;
+  try {
+    const res = await fetch(API + `/buddy/${username}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+    if (res.ok) { delete buddies[username]; renderBuddyList(); }
+  } catch (e) { console.error(e); }
+}
+
 function handlePresence(username, status, away_message) {
   if (!buddies[username]) return;
   const wasOnline = buddies[username].online;
-
   buddies[username].online = status !== 'offline';
   buddies[username].status = status;
   buddies[username].away_message = away_message;
 
   if (!wasOnline && status !== 'offline') {
     playBuddyOnSound();
+    sendNotif('cIM', `${username} is now online`);
     if (openChats[username]) appendDMMessage(username, 'system', null, `${username} is now online`);
   } else if (wasOnline && status === 'offline') {
     playDoorSound();
     if (openChats[username]) appendDMMessage(username, 'system', null, `${username} has signed off`);
   }
 
-  // Update open chat window header
   if (openChats[username]) {
     const chatWith = openChats[username].winEl.querySelector('.chat-with');
     if (chatWith) {
@@ -649,7 +612,6 @@ function handlePresence(username, status, away_message) {
       chatWith.innerHTML = `<div class="status-dot ${dotClass}"></div>${username} — ${status}${away_message ? `: "${away_message}"` : ''}`;
     }
   }
-
   renderBuddyList();
 }
 
@@ -662,18 +624,15 @@ function openDMWindow(username) {
   }
 
   const buddy = buddies[username] || { status: 'offline', away_message: '' };
-  const pos = placeWindowCascade();
+  const pos   = placeWindowCascade();
   const winEl = document.createElement('div');
   winEl.className = 'cim-window chat-window';
-  winEl.style.top = pos.top + 'px';
-  winEl.style.left = pos.left + 'px';
+  winEl.style.top = pos.top + 'px'; winEl.style.left = pos.left + 'px';
   winEl.innerHTML = `
     <div class="titlebar" id="chat-title-${username}">
       <span class="titlebar-icon">✉</span>
       <span class="titlebar-title">${username}</span>
-      <div class="titlebar-buttons">
-        <button class="win-btn close chat-close">✕</button>
-      </div>
+      <div class="titlebar-buttons"><button class="win-btn close chat-close">✕</button></div>
     </div>
     <div class="chat-with">
       <div class="status-dot ${buddy.status}"></div>
@@ -683,7 +642,7 @@ function openDMWindow(username) {
     <div class="typing-indicator" id="typing-${username}"></div>
     <div class="chat-input-row">
       <button class="emoji-trigger" id="emoji-btn-dm-${username}" title="Emojis">😊</button>
-      <textarea class="chat-input" id="input-${username}" placeholder="Message ${username}..." rows="2"></textarea>
+      <textarea class="chat-input" id="input-${username}" placeholder="Message ${username}..."></textarea>
       <button class="send-btn" id="send-${username}">Send</button>
     </div>
   `;
@@ -693,29 +652,17 @@ function openDMWindow(username) {
   focusWindow(winEl);
   openChats[username] = { winEl, unread: 0 };
 
-  winEl.querySelector('.chat-close').addEventListener('click', () => {
-    winEl.style.display = 'none';
-    delete openChats[username];
-    updateTaskbar();
-  });
+  winEl.querySelector('.chat-close').addEventListener('click', () => { winEl.style.display = 'none'; delete openChats[username]; updateTaskbar(); });
+  winEl.addEventListener('mousedown', () => { if (openChats[username]) { openChats[username].unread = 0; updateTaskbar(); } });
 
   const inputEl = document.getElementById(`input-${username}`);
   document.getElementById(`send-${username}`).addEventListener('click', () => sendDM(username));
-  inputEl.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendDM(username); }
-  });
+  inputEl.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendDM(username); } });
 
   let typingTimer = null;
-  inputEl.addEventListener('input', () => {
-    wsSend({ type: 'typing', to: username });
-    clearTimeout(typingTimer);
-    typingTimer = setTimeout(() => {}, 2000);
-  });
+  inputEl.addEventListener('input', () => { wsSend({ type: 'typing', to: username }); clearTimeout(typingTimer); typingTimer = setTimeout(() => {}, 2000); });
 
-  document.getElementById(`emoji-btn-dm-${username}`).addEventListener('click', e => {
-    e.stopPropagation();
-    createEmojiPicker(inputEl);
-  });
+  document.getElementById(`emoji-btn-dm-${username}`).addEventListener('click', e => { e.stopPropagation(); createEmojiPicker(inputEl); });
 
   loadDMHistory(username);
   updateTaskbar();
@@ -724,12 +671,7 @@ function openDMWindow(username) {
 async function loadDMHistory(username) {
   try {
     const data = await apiGet(`/history/dm/${username}`);
-    data.messages.forEach(msg => {
-      appendDMMessage(username,
-        msg.sender === myUsername ? 'self' : 'other',
-        msg.sender, msg.content, msg.timestamp
-      );
-    });
+    data.messages.forEach(msg => appendDMMessage(username, msg.sender === myUsername ? 'self' : 'other', msg.sender, msg.content, msg.timestamp));
   } catch { }
 }
 
@@ -743,6 +685,7 @@ function sendDM(username) {
 
 function receiveDM(from, content) {
   playMsgSound();
+  sendNotif(`Message from ${from}`, content.replace(/:([a-z0-9_-]+):/g, ':$1:'));
   if (!openChats[from]) openDMWindow(from);
   appendDMMessage(from, 'other', from, content);
   const focused = document.querySelector('.cim-window.focused');
@@ -760,15 +703,16 @@ function appendDMMessage(username, side, sender, content, timestamp) {
   div.className = `msg ${side}`;
 
   if (side !== 'system' && sender) {
-    const senderEl = document.createElement('div');
-    senderEl.className = 'msg-sender';
-    senderEl.textContent = sender;
-    div.appendChild(senderEl);
+    const top = document.createElement('div');
+    top.className = 'msg-top';
+    top.innerHTML = `<span class="msg-sender">${sender}</span><span class="msg-time">${formatTime(timestamp)}</span>`;
+    div.appendChild(top);
   }
 
   const text = document.createElement('div');
   text.className = 'msg-text';
-  text.innerHTML = renderContent(content);
+  if (side === 'system') { text.style.color = '#808080'; text.style.fontStyle = 'italic'; text.textContent = content; }
+  else                   { text.innerHTML = renderContent(content); }
   div.appendChild(text);
 
   container.appendChild(div);
@@ -791,34 +735,25 @@ function showTyping(from) {
 
 // ── Room Windows ───────────────────────────────────────────────────────────
 function openRoomWindow(roomName) {
-  if (openRooms[roomName]) {
-    openRooms[roomName].winEl.style.display = 'block';
-    focusWindow(openRooms[roomName].winEl);
-    return;
-  }
+  if (openRooms[roomName]) { openRooms[roomName].winEl.style.display = 'block'; focusWindow(openRooms[roomName].winEl); return; }
 
   const pos = placeWindowCascade();
   const winEl = document.createElement('div');
   winEl.className = 'cim-window room-window';
-  winEl.style.top = pos.top + 'px';
-  winEl.style.left = pos.left + 'px';
+  winEl.style.top = pos.top + 'px'; winEl.style.left = pos.left + 'px';
   winEl.innerHTML = `
     <div class="titlebar" id="room-title-${roomName}">
       <span class="titlebar-icon">🚪</span>
       <span class="titlebar-title">#${roomName}</span>
-      <div class="titlebar-buttons">
-        <button class="win-btn close room-close">✕</button>
-      </div>
+      <div class="titlebar-buttons"><button class="win-btn close room-close">✕</button></div>
     </div>
     <div class="room-layout">
       <div class="room-messages" id="room-msgs-${roomName}"></div>
-      <div class="room-members" id="room-members-${roomName}">
-        <div class="room-members-header">USERS</div>
-      </div>
+      <div class="room-members" id="room-members-${roomName}"><div class="room-members-header">USERS</div></div>
     </div>
     <div class="chat-input-row">
       <button class="emoji-trigger" id="emoji-btn-room-${roomName}" title="Emojis">😊</button>
-      <textarea class="chat-input" id="room-input-${roomName}" placeholder="#${roomName}" rows="2"></textarea>
+      <textarea class="chat-input" id="room-input-${roomName}" placeholder="#${roomName}..."></textarea>
       <button class="send-btn" id="room-send-${roomName}">Send</button>
     </div>
   `;
@@ -828,23 +763,12 @@ function openRoomWindow(roomName) {
   focusWindow(winEl);
   openRooms[roomName] = { winEl };
 
-  winEl.querySelector('.room-close').addEventListener('click', () => {
-    wsSend({ type: 'leave_room', room: roomName });
-    winEl.style.display = 'none';
-    delete openRooms[roomName];
-    updateTaskbar();
-  });
+  winEl.querySelector('.room-close').addEventListener('click', () => { wsSend({ type: 'leave_room', room: roomName }); winEl.style.display = 'none'; delete openRooms[roomName]; updateTaskbar(); });
 
   const roomInputEl = document.getElementById(`room-input-${roomName}`);
   document.getElementById(`room-send-${roomName}`).addEventListener('click', () => sendRoomMsg(roomName));
-  roomInputEl.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendRoomMsg(roomName); }
-  });
-
-  document.getElementById(`emoji-btn-room-${roomName}`).addEventListener('click', e => {
-    e.stopPropagation();
-    createEmojiPicker(roomInputEl);
-  });
+  roomInputEl.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendRoomMsg(roomName); } });
+  document.getElementById(`emoji-btn-room-${roomName}`).addEventListener('click', e => { e.stopPropagation(); createEmojiPicker(roomInputEl); });
 
   wsSend({ type: 'join_room', room: roomName });
   loadRoomHistory(roomName);
@@ -869,21 +793,28 @@ function sendRoomMsg(roomName) {
 function appendRoomMessage(roomName, from, content, timestamp) {
   const container = document.getElementById(`room-msgs-${roomName}`);
   if (!container) return;
+  const isSystem = from === '—';
   const div = document.createElement('div');
-  div.className = `msg ${from === myUsername ? 'self' : from === '—' ? 'system' : 'other'}`;
-  if (from !== '—') {
-    div.innerHTML = `<div class="msg-sender">${from}</div><div class="msg-text">${renderContent(content)}</div>`;
+  div.className = `msg ${isSystem ? 'system' : from === myUsername ? 'self' : 'other'}`;
+
+  if (!isSystem) {
+    const top = document.createElement('div');
+    top.className = 'msg-top';
+    top.innerHTML = `<span class="msg-sender">${from}</span><span class="msg-time">${formatTime(timestamp)}</span>`;
+    div.appendChild(top);
+    const text = document.createElement('div');
+    text.className = 'msg-text';
+    text.innerHTML = renderContent(content);
+    div.appendChild(text);
   } else {
-    div.innerHTML = `<div class="msg-text" style="color:#808080;font-style:italic">${content}</div>`;
+    div.innerHTML = `<div class="msg-text" style="color:#808080;font-style:italic;">${content}</div>`;
   }
+
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
 }
 
-function onRoomJoined(roomName, members) {
-  updateRoomMembers(roomName, members);
-  appendRoomMessage(roomName, '—', `You joined #${roomName}`);
-}
+function onRoomJoined(roomName, members) { updateRoomMembers(roomName, members); appendRoomMessage(roomName, '—', `You joined #${roomName}`); }
 
 function updateRoomMembers(roomName, members) {
   const container = document.getElementById(`room-members-${roomName}`);
@@ -901,59 +832,41 @@ function updateRoomMembers(roomName, members) {
 function handleRoomEvent(msg) {
   if (msg.event === 'join') {
     appendRoomMessage(msg.room, '—', `${msg.user} joined the room`);
-    // Refresh members
-    if (openRooms[msg.room]) {
-      const membersEl = document.getElementById(`room-members-${msg.room}`);
-      if (membersEl) {
-        const existing = Array.from(membersEl.querySelectorAll('.room-member'))
-          .map(el => el.textContent.trim());
-        if (!existing.includes(msg.user)) {
-          const div = document.createElement('div');
-          div.className = 'room-member';
-          div.innerHTML = `<div class="status-dot online"></div>${msg.user}`;
-          div.addEventListener('dblclick', () => openDMWindow(msg.user));
-          membersEl.appendChild(div);
-        }
+    const membersEl = document.getElementById(`room-members-${msg.room}`);
+    if (membersEl) {
+      const exists = Array.from(membersEl.querySelectorAll('.room-member')).some(e => e.textContent.trim() === msg.user);
+      if (!exists) {
+        const div = document.createElement('div');
+        div.className = 'room-member';
+        div.innerHTML = `<div class="status-dot online"></div>${msg.user}`;
+        div.addEventListener('dblclick', () => openDMWindow(msg.user));
+        membersEl.appendChild(div);
       }
     }
   } else if (msg.event === 'leave') {
     appendRoomMessage(msg.room, '—', `${msg.user} left the room`);
+    document.getElementById(`room-members-${msg.room}`)
+      ?.querySelectorAll('.room-member')
+      .forEach(e => { if (e.textContent.trim() === msg.user) e.remove(); });
   }
 }
 
 // ── Away Message ───────────────────────────────────────────────────────────
-el('btn-set-away').addEventListener('click', () => {
-  el('away-dialog').style.display = 'block';
-  el('away-dialog').style.top = '100px';
-  el('away-dialog').style.left = '300px';
-  focusWindow(el('away-dialog'));
-});
-
+el('btn-set-away').addEventListener('click', () => { el('away-dialog').style.cssText += ';display:block;top:100px;left:300px'; focusWindow(el('away-dialog')); });
 el('btn-close-away').addEventListener('click', () => { el('away-dialog').style.display = 'none'; });
-el('btn-save-away').addEventListener('click', () => saveAway(el('away-input').value.trim()));
+el('btn-save-away').addEventListener('click',  () => saveAway(el('away-input').value.trim()));
 el('btn-clear-away').addEventListener('click', () => { el('away-input').value = ''; saveAway(''); });
 
 async function saveAway(message) {
   try {
     await apiPost('/away', { message }, true);
-    const dot = el('self-status-dot');
-    dot.className = 'status-dot ' + (message ? 'away' : 'online');
+    el('self-status-dot').className = 'status-dot ' + (message ? 'away' : 'online');
     el('away-dialog').style.display = 'none';
-  } catch (e) {
-    console.error(e);
-  }
+  } catch (e) { console.error(e); }
 }
 
 // ── Add Buddy ──────────────────────────────────────────────────────────────
-el('btn-add-buddy').addEventListener('click', () => {
-  el('add-buddy-dialog').style.display = 'block';
-  el('add-buddy-dialog').style.top = '120px';
-  el('add-buddy-dialog').style.left = '280px';
-  focusWindow(el('add-buddy-dialog'));
-  el('add-buddy-msg').textContent = '';
-  el('add-buddy-input').value = '';
-});
-
+el('btn-add-buddy').addEventListener('click', () => { el('add-buddy-dialog').style.cssText += ';display:block;top:120px;left:280px'; focusWindow(el('add-buddy-dialog')); el('add-buddy-msg').textContent = ''; el('add-buddy-input').value = ''; });
 el('btn-close-add-buddy').addEventListener('click', () => { el('add-buddy-dialog').style.display = 'none'; });
 el('btn-do-add-buddy').addEventListener('click', doAddBuddy);
 el('add-buddy-input').addEventListener('keydown', e => { if (e.key === 'Enter') doAddBuddy(); });
@@ -961,21 +874,16 @@ el('add-buddy-input').addEventListener('keydown', e => { if (e.key === 'Enter') 
 async function doAddBuddy() {
   const username = el('add-buddy-input').value.trim().toLowerCase();
   const msgEl = el('add-buddy-msg');
-  msgEl.textContent = '';
-  msgEl.className = 'dialog-msg';
+  msgEl.textContent = ''; msgEl.className = 'dialog-msg';
   if (!username) return;
   try {
     await apiPost('/buddy/add', { username }, true);
-    msgEl.className = 'dialog-msg success';
-    msgEl.textContent = `Added ${username}!`;
+    msgEl.className = 'dialog-msg success'; msgEl.textContent = `Added ${username}!`;
     el('add-buddy-input').value = '';
     buddies[username] = { username, online: false, status: 'offline', away_message: '' };
     renderBuddyList();
     setTimeout(() => { el('add-buddy-dialog').style.display = 'none'; }, 800);
-  } catch (e) {
-    msgEl.className = 'dialog-msg error';
-    msgEl.textContent = e.message;
-  }
+  } catch (e) { msgEl.className = 'dialog-msg error'; msgEl.textContent = e.message; }
 }
 
 // ── Rooms ──────────────────────────────────────────────────────────────────
@@ -985,17 +893,13 @@ el('btn-refresh-rooms').addEventListener('click', refreshRooms);
 el('btn-create-room').addEventListener('click', async () => {
   const name = el('new-room-input').value.trim();
   if (!name) return;
-  try {
-    await apiPost('/rooms', { name }, true);
-    el('new-room-input').value = '';
-    await refreshRooms();
-  } catch (e) { alert(e.message); }
+  try { await apiPost('/rooms', { name }, true); el('new-room-input').value = ''; await refreshRooms(); }
+  catch (e) { alert(e.message); }
 });
+el('new-room-input').addEventListener('keydown', e => { if (e.key === 'Enter') el('btn-create-room').click(); });
 
 async function openRoomsList() {
-  el('rooms-window').style.display = 'block';
-  el('rooms-window').style.top = '60px';
-  el('rooms-window').style.left = '300px';
+  el('rooms-window').style.cssText += ';display:block;top:60px;left:300px';
   focusWindow(el('rooms-window'));
   await refreshRooms();
 }
@@ -1005,10 +909,7 @@ async function refreshRooms() {
     const data = await apiGet('/rooms');
     const list = el('rooms-list');
     list.innerHTML = '';
-    if (data.rooms.length === 0) {
-      list.innerHTML = '<div style="padding:8px;font-size:11px;color:#808080;">No rooms yet. Create one below!</div>';
-      return;
-    }
+    if (data.rooms.length === 0) { list.innerHTML = '<div style="padding:8px;font-size:11px;color:#808080;">No rooms yet. Create one below!</div>'; return; }
     data.rooms.forEach(room => {
       const div = document.createElement('div');
       div.className = 'room-entry';
@@ -1019,10 +920,7 @@ async function refreshRooms() {
         </div>
         <span class="room-entry-count">${room.members.length} online</span>
       `;
-      div.addEventListener('dblclick', () => {
-        openRoomWindow(room.name);
-        el('rooms-window').style.display = 'none';
-      });
+      div.addEventListener('dblclick', () => { openRoomWindow(room.name); el('rooms-window').style.display = 'none'; });
       list.appendChild(div);
     });
   } catch { }
@@ -1030,7 +928,6 @@ async function refreshRooms() {
 
 // ── Sign Off ───────────────────────────────────────────────────────────────
 el('btn-signoff').addEventListener('click', doSignoff);
-
 function doSignoff() {
   if (!confirm('Sign off from cIM?')) return;
   localStorage.removeItem('cim_token');
@@ -1041,49 +938,27 @@ function doSignoff() {
 
 // ── Start Menu ─────────────────────────────────────────────────────────────
 const startMenu = el('start-menu');
-
-el('start-btn').addEventListener('click', e => {
-  e.stopPropagation();
-  startMenu.classList.toggle('open');
-});
-
+el('start-btn').addEventListener('click', e => { e.stopPropagation(); startMenu.classList.toggle('open'); });
 document.addEventListener('click', () => startMenu.classList.remove('open'));
 startMenu.addEventListener('click', e => e.stopPropagation());
-
 function smenu(fn) { startMenu.classList.remove('open'); fn(); }
 
-el('smenu-buddy-list').addEventListener('click', () => smenu(() => {
-  el('buddy-list-window').style.display = 'block';
-  focusWindow(el('buddy-list-window'));
-}));
-el('smenu-rooms').addEventListener('click', () => smenu(() => openRoomsList()));
-el('smenu-away').addEventListener('click', () => smenu(() => {
-  el('away-dialog').style.display = 'block';
-  el('away-dialog').style.top = '80px';
-  el('away-dialog').style.left = '220px';
-  focusWindow(el('away-dialog'));
-}));
-el('smenu-add-buddy').addEventListener('click', () => smenu(() => {
-  el('add-buddy-dialog').style.display = 'block';
-  el('add-buddy-dialog').style.top = '80px';
-  el('add-buddy-dialog').style.left = '220px';
-  el('add-buddy-msg').textContent = '';
-  el('add-buddy-input').value = '';
-  focusWindow(el('add-buddy-dialog'));
-}));
-el('smenu-about').addEventListener('click', () => smenu(() => openAbout()));
-el('smenu-signoff').addEventListener('click', () => smenu(() => doSignoff()));
+el('smenu-buddy-list').addEventListener('click', () => smenu(() => { el('buddy-list-window').style.display = 'block'; focusWindow(el('buddy-list-window')); }));
+el('smenu-rooms').addEventListener('click',      () => smenu(() => openRoomsList()));
+el('smenu-away').addEventListener('click',       () => smenu(() => { el('away-dialog').style.cssText += ';display:block;top:80px;left:220px'; focusWindow(el('away-dialog')); }));
+el('smenu-add-buddy').addEventListener('click',  () => smenu(() => { el('add-buddy-dialog').style.cssText += ';display:block;top:80px;left:220px'; el('add-buddy-msg').textContent = ''; el('add-buddy-input').value = ''; focusWindow(el('add-buddy-dialog')); }));
+el('smenu-about').addEventListener('click',      () => smenu(() => openAbout()));
+el('smenu-signoff').addEventListener('click',    () => smenu(() => doSignoff()));
 
-// ── About Dialog ───────────────────────────────────────────────────────────
+// ── About ──────────────────────────────────────────────────────────────────
 function openAbout() {
   const about = el('about-dialog');
-  about.style.display = 'block';
-  about.style.top = '80px';
-  about.style.left = '50%';
+  about.style.display   = 'block';
+  about.style.top       = '80px';
+  about.style.left      = '50%';
   about.style.transform = 'translateX(-50%)';
   el('about-username').textContent = myUsername || '—';
   focusWindow(about);
 }
-
-el('btn-close-about').addEventListener('click', () => { el('about-dialog').style.display = 'none'; });
+el('btn-close-about').addEventListener('click',    () => { el('about-dialog').style.display = 'none'; });
 el('btn-close-about-ok').addEventListener('click', () => { el('about-dialog').style.display = 'none'; });
