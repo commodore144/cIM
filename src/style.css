@@ -592,7 +592,7 @@ body {
 }
 
 .room-members {
-  width: 100px;
+  width: fit-content;
   overflow-y: auto;
   background: #fff;
   border: 1px solid;
