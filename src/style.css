@@ -861,8 +861,8 @@ body {
 
 /* ── Inline emoji images ──────────────────────────────── */
 .chat-emoji {
-  width: 11px;
-  height: 11px;
+  width: 22px;
+  height: 22px;
   image-rendering: pixelated;
   vertical-align: middle;
   position: relative;
