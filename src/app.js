@@ -18,6 +18,8 @@ let zCounter     = 10;
 let soundEnabled = localStorage.getItem('cim_sound') !== 'off';
 let totalUnread  = 0;
 let activeEmojiPicker = null;
+let isAdmin      = false;
+let roomInvites  = [];
 
 // ── Emoji state ────────────────────────────────────────────────────────────
 let EMOJIS    = [];
@@ -360,6 +362,8 @@ function enterDesktop() {
   makeDraggable(el('add-buddy-dialog'), el('add-buddy-titlebar'));
   makeDraggable(el('rooms-window'),     el('rooms-titlebar'));
   makeDraggable(el('about-dialog'),     el('about-titlebar'));
+  makeDraggable(el('admin-window'),     el('admin-titlebar'));
+  makeDraggable(el('invite-dialog'),    el('invite-titlebar'));
 
   updateSoundBtn(); updateTitle(); requestNotifPerms(); loadEmojis();
   focusWindow(el('buddy-list-window'));
@@ -419,6 +423,12 @@ function handleWSMessage(msg) {
       if (msg.away_message) { el('self-status-dot').className = 'status-dot away'; el('away-input').value = msg.away_message; }
       msg.buddies.forEach(b => { buddies[b.username] = b; });
       pendingRequests = msg.pending_requests || [];
+      roomInvites = msg.room_invites || [];
+      isAdmin = msg.is_admin || false;
+      if (isAdmin) {
+        el('smenu-admin').style.display = 'flex';
+        el('smenu-admin-div').style.display = 'block';
+      }
       renderBuddyList();
       break;
     case 'dm':                receiveDM(msg.from, msg.content); break;
@@ -432,6 +442,22 @@ function handleWSMessage(msg) {
     case 'buddy_request':     handleIncomingRequest(msg.from); break;
     case 'buddy_accepted':    handleBuddyAccepted(msg); break;
     case 'buddy_removed':     handleBuddyRemoved(msg.username); break;
+    case 'room_invite_received':
+      playRequestSound();
+      sendNotif(`cIM`, `${msg.from} invited you to #${msg.room}`);
+      if (!roomInvites.find(r => r.room === msg.room && r.from === msg.from)) {
+        roomInvites.push({ room: msg.room, from: msg.from, at: new Date().toISOString() });
+      }
+      renderBuddyList();
+      break;
+    case 'room_error':
+      showToast(msg.error);
+      if (openRooms[msg.room]) {
+          openRooms[msg.room].winEl.style.display = 'none';
+          delete openRooms[msg.room];
+          updateTaskbar();
+      }
+      break;
   }
 }
 
@@ -496,6 +522,23 @@ async function declineRequest(fromUser) {
   } catch (e) { console.error(e); }
 }
 
+async function acceptRoomInvite(roomName) {
+  try {
+    await apiPost(`/rooms/invite/accept/${roomName}`, {}, true);
+    roomInvites = roomInvites.filter(r => r.room !== roomName);
+    renderBuddyList();
+    openRoomWindow(roomName);
+  } catch (e) { showToast(e.message); }
+}
+
+async function declineRoomInvite(roomName) {
+  try {
+    await apiPost(`/rooms/invite/decline/${roomName}`, {}, true);
+    roomInvites = roomInvites.filter(r => r.room !== roomName);
+    renderBuddyList();
+  } catch (e) { showToast(e.message); }
+}
+
 // ── Buddy List ─────────────────────────────────────────────────────────────
 function renderBuddyList() {
   const body    = el('buddy-list-body');
@@ -533,7 +576,33 @@ function renderBuddyList() {
     body.appendChild(section);
   }
 
-  if (Object.keys(buddies).length === 0 && pendingRequests.length === 0) {
+  if (roomInvites.length > 0) {
+    const rSection = document.createElement('div');
+    rSection.className = 'buddy-requests-section';
+
+    const rHdr = document.createElement('div');
+    rHdr.className = 'buddy-requests-header';
+    rHdr.innerHTML = `✉ ${roomInvites.length} Room Invite${roomInvites.length > 1 ? 's' : ''}`;
+    rSection.appendChild(rHdr);
+
+    roomInvites.forEach(inv => {
+      const row = document.createElement('div');
+      row.className = 'buddy-request-row';
+      row.innerHTML = `
+        <span class="buddy-request-name" style="font-size:10px;">#${inv.room} (by ${inv.from})</span>
+        <div class="buddy-request-btns">
+          <button class="req-btn accept" title="Join">✓</button>
+          <button class="req-btn decline" title="Decline">✕</button>
+        </div>
+      `;
+      row.querySelector('.accept').addEventListener('click', () => acceptRoomInvite(inv.room));
+      row.querySelector('.decline').addEventListener('click', () => declineRoomInvite(inv.room));
+      rSection.appendChild(row);
+    });
+    body.appendChild(rSection);
+  }
+
+  if (Object.keys(buddies).length === 0 && pendingRequests.length === 0 && roomInvites.length === 0) {
     body.innerHTML = '<div style="padding:8px 6px;font-size:11px;color:#808080;">No buddies yet.<br>Use Add to send a request.</div>';
     return;
   }
@@ -803,7 +872,10 @@ function openRoomWindow(roomName) {
     <div class="titlebar" id="room-title-${roomName}">
       <span class="titlebar-icon">🚪</span>
       <span class="titlebar-title">#${roomName}</span>
-      <div class="titlebar-buttons"><button class="win-btn close room-close">✕</button></div>
+      <div class="titlebar-buttons">
+        <button class="win-btn room-invite" title="Invite User">➕</button>
+        <button class="win-btn close room-close">✕</button>
+      </div>
     </div>
     <div class="room-layout">
       <div class="room-messages" id="room-msgs-${roomName}"></div>
@@ -822,6 +894,14 @@ function openRoomWindow(roomName) {
   openRooms[roomName] = { winEl };
 
   winEl.querySelector('.room-close').addEventListener('click', () => { wsSend({ type: 'leave_room', room: roomName }); winEl.style.display = 'none'; delete openRooms[roomName]; updateTaskbar(); });
+  
+  winEl.querySelector('.room-invite').addEventListener('click', () => {
+    el('invite-dialog').style.cssText += ';display:block;top:100px;left:250px';
+    focusWindow(el('invite-dialog'));
+    el('invite-msg').textContent = '';
+    el('invite-input').value = '';
+    el('invite-input').dataset.room = roomName;
+  });
 
   const roomInputEl = document.getElementById(`room-input-${roomName}`);
   document.getElementById(`room-send-${roomName}`).addEventListener('click', () => sendRoomMsg(roomName));
@@ -958,8 +1038,18 @@ el('btn-close-rooms').addEventListener('click', () => { el('rooms-window').style
 el('btn-refresh-rooms').addEventListener('click', refreshRooms);
 el('btn-create-room').addEventListener('click', async () => {
   const name = el('new-room-input').value.trim();
+  const topic = el('new-room-topic').value.trim();
+  const buddiesOnly = el('room-buddies-only').checked;
+  const inviteOnly = el('room-invite-only').checked;
   if (!name) return;
-  try { await apiPost('/rooms', { name }, true); el('new-room-input').value = ''; await refreshRooms(); }
+  try { 
+    await apiPost('/rooms', { name, topic, buddies_only: buddiesOnly, invite_only: inviteOnly }, true); 
+    el('new-room-input').value = ''; 
+    el('new-room-topic').value = '';
+    el('room-buddies-only').checked = false;
+    el('room-invite-only').checked = false;
+    await refreshRooms(); 
+  }
   catch (e) { alert(e.message); }
 });
 el('new-room-input').addEventListener('keydown', e => { if (e.key === 'Enter') el('btn-create-room').click(); });
@@ -981,7 +1071,7 @@ async function refreshRooms() {
       div.className = 'room-entry';
       div.innerHTML = `
         <div class="room-entry-info">
-          <span class="room-entry-name">#${room.name}</span>
+          <span class="room-entry-name">#${room.name} ${room.is_private ? '🔒' : ''}</span>
           ${room.topic ? `<span class="room-entry-topic">${room.topic}</span>` : ''}
         </div>
         <span class="room-entry-count">${room.members.length} online</span>
@@ -1014,6 +1104,97 @@ el('smenu-away').addEventListener('click',       () => smenu(() => { el('away-di
 el('smenu-add-buddy').addEventListener('click',  () => smenu(() => { el('add-buddy-dialog').style.cssText += ';display:block;top:80px;left:220px'; el('add-buddy-msg').textContent = ''; el('add-buddy-input').value = ''; focusWindow(el('add-buddy-dialog')); }));
 el('smenu-about').addEventListener('click',      () => smenu(() => openAbout()));
 el('smenu-signoff').addEventListener('click',    () => smenu(() => doSignoff()));
+
+// ── Admin Panel ────────────────────────────────────────────────────────────
+el('smenu-admin').addEventListener('click', () => smenu(() => {
+  el('admin-window').style.cssText += ';display:block;top:80px;left:280px';
+  focusWindow(el('admin-window'));
+  loadAdminUsers();
+}));
+
+el('btn-close-admin').addEventListener('click', () => { el('admin-window').style.display = 'none'; });
+
+el('tab-admin-users').addEventListener('click', () => {
+  el('tab-admin-users').classList.add('active');
+  el('tab-admin-rooms').classList.remove('active');
+  el('admin-users-list').style.display = 'block';
+  el('admin-rooms-list').style.display = 'none';
+  loadAdminUsers();
+});
+
+el('tab-admin-rooms').addEventListener('click', () => {
+  el('tab-admin-rooms').classList.add('active');
+  el('tab-admin-users').classList.remove('active');
+  el('admin-rooms-list').style.display = 'block';
+  el('admin-users-list').style.display = 'none';
+  loadAdminRooms();
+});
+
+async function loadAdminUsers() {
+  try {
+    const data = await apiGet('/admin/users');
+    const list = el('admin-users-list');
+    list.innerHTML = '';
+    data.users.forEach(u => {
+      const div = document.createElement('div');
+      div.className = 'room-entry';
+      div.innerHTML = `
+        <span class="room-entry-name">${u.username} ${u.is_admin ? '<span style="color:#0000ff;font-size:10px">(Admin)</span>' : ''}</span>
+        <button class="cim-btn">Toggle Admin</button>
+      `;
+      div.querySelector('button').addEventListener('click', async () => {
+        try { await apiPost(`/admin/users/${u.username}/toggle-admin`, {}, true); loadAdminUsers(); }
+        catch (e) { showToast(e.message); }
+      });
+      list.appendChild(div);
+    });
+  } catch (e) { showToast(e.message); }
+}
+
+async function loadAdminRooms() {
+  try {
+    const data = await apiGet('/rooms');
+    const list = el('admin-rooms-list');
+    list.innerHTML = '';
+    data.rooms.forEach(r => {
+      const div = document.createElement('div');
+      div.className = 'room-entry';
+      div.innerHTML = `
+        <div class="room-entry-info">
+          <span class="room-entry-name">#${r.name} ${r.is_private ? '🔒' : ''}</span>
+          <span class="room-entry-count" style="margin-left:8px;">${r.members.length} online</span>
+        </div>
+        <button class="cim-btn">Delete</button>
+      `;
+      div.querySelector('button').addEventListener('click', async () => {
+        if (!confirm(`Delete room #${r.name}?`)) return;
+        try { await apiDelete(`/admin/rooms/${r.name}`); loadAdminRooms(); }
+        catch (e) { showToast(e.message); }
+      });
+      list.appendChild(div);
+    });
+  } catch (e) { showToast(e.message); }
+}
+
+// ── Invite Dialog ──────────────────────────────────────────────────────────
+el('btn-close-invite').addEventListener('click', () => { el('invite-dialog').style.display = 'none'; });
+el('btn-do-invite').addEventListener('click', doRoomInvite);
+el('invite-input').addEventListener('keydown', e => { if (e.key === 'Enter') doRoomInvite(); });
+
+async function doRoomInvite() {
+  const target = el('invite-input').value.trim();
+  const room = el('invite-input').dataset.room;
+  if (!target || !room) return;
+  const msgEl = el('invite-msg');
+  msgEl.textContent = ''; msgEl.className = 'dialog-msg';
+  try {
+    await apiPost(`/rooms/${room}/invite/${target}`, {}, true);
+    msgEl.className = 'dialog-msg success';
+    msgEl.textContent = `Invite sent to ${target}!`;
+    el('invite-input').value = '';
+    setTimeout(() => { el('invite-dialog').style.display = 'none'; }, 1000);
+  } catch (e) { msgEl.className = 'dialog-msg error'; msgEl.textContent = e.message; }
+}
 
 // ── About ──────────────────────────────────────────────────────────────────
 function openAbout() {
