@@ -10,7 +10,7 @@ let ws           = null;
 let wsReconnectTimer = null;
 let commMode     = 'ws';
 let pollTimer    = null;
-let buddies      = {};           // username -> {online, status, away_message}
+let buddies      = {};           // username -> {online, status, away_message, emoji, status_type}
 let pendingRequests = [];        // [{from, at}]
 let openChats    = {};           // username -> {winEl, unread}
 let openRooms    = {};           // room -> {winEl}
@@ -114,6 +114,24 @@ function renderContent(rawText) {
     }
     return match;
   });
+}
+
+function renderStatusEmoji(name) {
+  name = name.replace(/:/g, '');
+  if (EMOJI_SET.has(name)) {
+    return `<img class="status-emoji" src="${EMOJI_PATH}${name}.png" alt=":${name}:" title=":${name}:" style="width:16px; height:16px; margin-right:4px; vertical-align:middle;">`;
+  }
+  return '';
+}
+
+function updateStatusEmojiPreview(name) {
+  name = name.replace(/:/g, '');
+  const btn = el('status-emoji-btn');
+  if (EMOJI_SET.has(name)) {
+    btn.innerHTML = `<img src="${EMOJI_PATH}${name}.png" style="width:20px; height:20px;">`;
+  } else {
+    btn.innerHTML = '';
+  }
 }
 
 function insertAtCursor(textarea, text) {
@@ -420,7 +438,14 @@ function handleWSMessage(msg) {
   switch (msg.type) {
     case 'init':
       el('self-name').textContent = msg.username;
-      if (msg.away_message) { el('self-status-dot').className = 'status-dot away'; el('away-input').value = msg.away_message; }
+      if (msg.away_message || msg.emoji) { 
+        el('self-status-dot').className = 'status-dot away'; 
+        el('away-input').value = msg.away_message || '';
+        if (msg.emoji) {
+          el('status-emoji-input').value = msg.emoji;
+          updateStatusEmojiPreview(msg.emoji);
+        }
+      }
       msg.buddies.forEach(b => { buddies[b.username] = b; });
       pendingRequests = msg.pending_requests || [];
       roomInvites = msg.room_invites || [];
@@ -434,7 +459,7 @@ function handleWSMessage(msg) {
     case 'dm':                receiveDM(msg.from, msg.content); break;
     case 'dm_echo':           appendDMMessage(msg.to, 'self', myUsername, msg.content); break;
     case 'typing':            showTyping(msg.from); break;
-    case 'presence':          handlePresence(msg.user, msg.status, msg.away_message); break;
+    case 'presence':          handlePresence(msg.user, msg.status, msg.away_message, msg.emoji, msg.status_type); break;
     case 'room_message':
     case 'room_message_echo': appendRoomMessage(msg.room, msg.from, msg.content); break;
     case 'room_joined':       onRoomJoined(msg.room, msg.members); break;
@@ -477,7 +502,9 @@ function handleBuddyAccepted(msg) {
     username: msg.username,
     online: msg.online,
     status: msg.status,
-    away_message: msg.away_message || ''
+    away_message: msg.away_message || '',
+    emoji: msg.emoji || '',
+    status_type: msg.status_type || 'os'
   };
   playBuddyOnSound();
   sendNotif('cIM', `${msg.username} accepted your buddy request!`);
@@ -629,7 +656,8 @@ function renderBuddyGroup(container, title, list, statusClass) {
   list.forEach(buddy => {
     const entry = document.createElement('div');
     entry.className = `buddy-entry ${statusClass}`;
-    entry.innerHTML = `<div class="status-dot ${statusClass}"></div><span class="buddy-name">${buddy.username}</span>`;
+    const emojiHtml = buddy.emoji ? renderStatusEmoji(buddy.emoji) : '';
+    entry.innerHTML = `<div class="status-dot ${statusClass}"></div>${emojiHtml}<span class="buddy-name">${buddy.username}</span>`;
     entry.addEventListener('dblclick', () => openDMWindow(buddy.username));
     entry.addEventListener('contextmenu', e => { e.preventDefault(); showBuddyContextMenu(e.clientX, e.clientY, buddy.username); });
     items.appendChild(entry);
@@ -638,6 +666,7 @@ function renderBuddyGroup(container, title, list, statusClass) {
       const awayLine = document.createElement('div');
       awayLine.className = 'buddy-away-text';
       awayLine.textContent = `"${buddy.away_message}"`;
+      if (buddy.status_type === 'as') awayLine.style.fontStyle = 'italic';
       items.appendChild(awayLine);
     }
   });
@@ -693,12 +722,14 @@ async function removeBuddy(username) {
   } catch (e) { console.error(e); }
 }
 
-function handlePresence(username, status, away_message) {
+function handlePresence(username, status, away_message, emoji = '', status_type = 'os') {
   if (!buddies[username]) return;
   const wasOnline = buddies[username].online;
   buddies[username].online = status !== 'offline';
   buddies[username].status = status;
   buddies[username].away_message = away_message;
+  buddies[username].emoji = emoji;
+  buddies[username].status_type = status_type;
 
   if (!wasOnline && status !== 'offline') {
     playBuddyOnSound();
@@ -712,7 +743,8 @@ function handlePresence(username, status, away_message) {
   if (openChats[username]) {
     const chatWith = openChats[username].winEl.querySelector('.chat-with');
     if (chatWith) {
-      chatWith.innerHTML = `<div class="status-dot ${status === 'online' ? 'online' : status === 'away' ? 'away' : 'offline'}"></div>${username} — ${status}${away_message ? `: "${away_message}"` : ''}`;
+      const emojiHtml = emoji ? renderStatusEmoji(emoji) : '';
+      chatWith.innerHTML = `<div class="status-dot ${status === 'online' ? 'online' : status === 'away' ? 'away' : 'offline'}"></div>${emojiHtml}${username} — ${status}${away_message ? `: "${away_message}"` : ''} <small style="opacity:0.6">(${status_type.toUpperCase()})</small>`;
     }
   }
   renderBuddyList();
@@ -964,7 +996,9 @@ function updateRoomMembers(roomName, members) {
   members.forEach(m => {
     const div = document.createElement('div');
     div.className = 'room-member';
-    div.innerHTML = `<div class="status-dot online"></div>${m}`;
+    const b = buddies[m] || { online: true, status: 'online', emoji: '' };
+    const emojiHtml = b.emoji ? renderStatusEmoji(b.emoji) : '';
+    div.innerHTML = `<div class="status-dot online"></div>${emojiHtml}${m}`;
     div.addEventListener('dblclick', () => openDMWindow(m));
     container.appendChild(div);
   });
@@ -977,7 +1011,9 @@ function handleRoomEvent(msg) {
     if (membersEl && !Array.from(membersEl.querySelectorAll('.room-member')).some(e => e.textContent.trim() === msg.user)) {
       const div = document.createElement('div');
       div.className = 'room-member';
-      div.innerHTML = `<div class="status-dot online"></div>${msg.user}`;
+      const b = buddies[msg.user] || { online: true, status: 'online', emoji: '' };
+      const emojiHtml = b.emoji ? renderStatusEmoji(b.emoji) : '';
+      div.innerHTML = `<div class="status-dot online"></div>${emojiHtml}${msg.user}`;
       div.addEventListener('dblclick', () => openDMWindow(msg.user));
       membersEl.appendChild(div);
     }
@@ -990,16 +1026,90 @@ function handleRoomEvent(msg) {
 // ── Away Message ───────────────────────────────────────────────────────────
 el('btn-set-away').addEventListener('click', () => { el('away-dialog').style.cssText += ';display:block;top:100px;left:300px'; focusWindow(el('away-dialog')); });
 el('btn-close-away').addEventListener('click', () => { el('away-dialog').style.display = 'none'; });
-el('btn-save-away').addEventListener('click',  () => saveAway(el('away-input').value.trim()));
-el('btn-clear-away').addEventListener('click', () => { el('away-input').value = ''; saveAway(''); });
+el('btn-save-away').addEventListener('click', () => {
+  const msg = el('away-input').value.trim();
+  const emoji = el('status-emoji-input').value;
+  const type = Array.from(document.getElementsByName('status-type')).find(r => r.checked)?.value || 'os';
+  saveStatus(msg, emoji, type);
+});
+el('btn-clear-away').addEventListener('click', () => { 
+  el('away-input').value = ''; 
+  el('status-emoji-input').value = '';
+  updateStatusEmojiPreview('');
+  saveStatus('', '', 'os'); 
+});
 
-async function saveAway(message) {
+el('status-emoji-btn').addEventListener('click', e => {
+  e.stopPropagation();
+  createStatusEmojiPicker();
+});
+
+function createStatusEmojiPicker() {
+  if (activeEmojiPicker) { activeEmojiPicker.remove(); activeEmojiPicker = null; }
+  const picker = document.createElement('div');
+  picker.className = 'emoji-picker';
+  const grid = document.createElement('div');
+  grid.className = 'emoji-grid';
+  picker.appendChild(grid);
+
+  EMOJIS.forEach(name => {
+    const btn = document.createElement('button');
+    btn.className = 'emoji-btn';
+    btn.innerHTML = `<img src="${EMOJI_PATH}${name}.png" style="width:20px;height:20px;">`;
+    btn.addEventListener('mousedown', e => {
+      e.preventDefault();
+      el('status-emoji-input').value = name;
+      updateStatusEmojiPreview(name);
+      picker.remove(); activeEmojiPicker = null;
+    });
+    grid.appendChild(btn);
+  });
+
+  document.body.appendChild(picker);
+  const rect = el('status-emoji-btn').getBoundingClientRect();
+  picker.style.left = rect.left + 'px';
+  picker.style.top = rect.bottom + 4 + 'px';
+  activeEmojiPicker = picker;
+
+  setTimeout(() => {
+    function outside(e) { if (!picker.contains(e.target) && e.target !== el('status-emoji-btn')) { picker.remove(); activeEmojiPicker = null; document.removeEventListener('mousedown', outside); } }
+    document.addEventListener('mousedown', outside);
+  }, 0);
+}
+
+async function saveStatus(message, emoji = '', type = 'os') {
   try {
-    await apiPost('/away', { message }, true);
-    el('self-status-dot').className = 'status-dot ' + (message ? 'away' : 'online');
+    await apiPost('/away', { message, emoji, status_type: type }, true);
+    // Locally update
+    buddies[myUsername] = { ...buddies[myUsername], away_message: message, emoji, status_type: type };
+    el('self-status-dot').className = 'status-dot ' + (message || emoji ? 'away' : 'online');
     el('away-dialog').style.display = 'none';
+    renderBuddyList();
   } catch (e) { console.error(e); }
 }
+
+// ── Idle Detection (AS) ───────────────────────────────────────────────────
+let idleTimer = null;
+const IDLE_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+
+function resetIdleTimer() {
+  clearTimeout(idleTimer);
+  const me = buddies[myUsername];
+  if (me && me.status_type === 'as') {
+    // If we were in AS, clear it when we become active (OS or Online)
+    saveStatus('', '', 'os');
+  }
+  idleTimer = setTimeout(setIdleStatus, IDLE_TIMEOUT);
+}
+
+function setIdleStatus() {
+  // Set AS status (overrides OS per user request "vice versa")
+  saveStatus('Idle (Autogenerated)', 'zzz', 'as');
+}
+
+document.addEventListener('mousemove', resetIdleTimer);
+document.addEventListener('keydown', resetIdleTimer);
+idleTimer = setTimeout(setIdleStatus, IDLE_TIMEOUT);
 
 // ── Add Buddy ──────────────────────────────────────────────────────────────
 el('btn-add-buddy').addEventListener('click', () => {
@@ -1140,10 +1250,18 @@ async function loadAdminUsers() {
       div.className = 'room-entry';
       div.innerHTML = `
         <span class="room-entry-name">${u.username} ${u.is_admin ? '<span style="color:#0000ff;font-size:10px">(Admin)</span>' : ''}</span>
-        <button class="cim-btn">Toggle Admin</button>
+        <div>
+          <button class="cim-btn btn-toggle">Toggle Admin</button>
+          <button class="cim-btn btn-delete" style="color:red">Delete</button>
+        </div>
       `;
-      div.querySelector('button').addEventListener('click', async () => {
+      div.querySelector('.btn-toggle').addEventListener('click', async () => {
         try { await apiPost(`/admin/users/${u.username}/toggle-admin`, {}, true); loadAdminUsers(); }
+        catch (e) { showToast(e.message); }
+      });
+      div.querySelector('.btn-delete').addEventListener('click', async () => {
+        if (!confirm(`Are you sure you want to delete user ${u.username}? This cannot be undone.`)) return;
+        try { await apiDelete(`/admin/users/${u.username}`); loadAdminUsers(); }
         catch (e) { showToast(e.message); }
       });
       list.appendChild(div);

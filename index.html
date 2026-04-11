@@ -66,7 +66,7 @@
       </div>
       <div class="buddy-toolbar">
         <button class="tool-btn" id="btn-add-buddy">Add</button>
-        <button class="tool-btn" id="btn-set-away">Away</button>
+        <button class="tool-btn" id="btn-set-away">Status</button>
         <button class="tool-btn" id="btn-open-rooms">Rooms</button>
       </div>
       <div class="buddy-list-body" id="buddy-list-body">
@@ -82,8 +82,21 @@
         </div>
       </div>
       <div class="away-body">
-        <label>Away Message:</label>
-        <textarea class="away-input" id="away-input"></textarea>
+        <div style="display:flex; gap:4px; margin-bottom: 8px;">
+          <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+            <label>Emoji</label>
+            <button class="emoji-trigger-status" id="status-emoji-btn" style="width:32px; height:32px; font-size:18px; display:flex; align-items:center; justify-content:center; padding:0; border:2px inset #fff; background:#ccc;"> </button>
+            <input type="hidden" id="status-emoji-input" value="">
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
+            <label>Status Message:</label>
+            <textarea class="away-input" id="away-input" style="height:48px"></textarea>
+          </div>
+        </div>
+        <div style="margin-bottom:8px; font-size:11px;">
+           <label><input type="radio" name="status-type" value="os" checked> Online Status (OS)</label><br>
+           <label><input type="radio" name="status-type" value="as"> Automatic Status (AS)</label>
+        </div>
         <div class="btn-row">
           <button class="cim-btn" id="btn-save-away">OK</button>
           <button class="cim-btn" id="btn-clear-away">Clear</button>
@@ -223,7 +236,7 @@
     <div class="start-menu-items">
       <div class="start-menu-item" id="smenu-buddy-list"><span class="smenu-icon">💬</span> Buddy List</div>
       <div class="start-menu-item" id="smenu-rooms"><span class="smenu-icon">🚪</span> Chat Rooms</div>
-      <div class="start-menu-item" id="smenu-away"><span class="smenu-icon">💤</span> Set Away Message</div>
+      <div class="start-menu-item" id="smenu-away"><span class="smenu-icon">💬</span> Set Status</div>
       <div class="start-menu-item" id="smenu-add-buddy"><span class="smenu-icon">👤</span> Add a Buddy</div>
       <div class="start-menu-divider"></div>
       <div class="start-menu-item" id="smenu-about"><span class="smenu-icon">❓</span> About cIM</div>
