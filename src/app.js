@@ -438,8 +438,8 @@ function handleWSMessage(msg) {
   switch (msg.type) {
     case 'init':
       el('self-name').textContent = msg.username;
-      if (msg.away_message || msg.emoji) { 
-        el('self-status-dot').className = 'status-dot away'; 
+      if (msg.away_message || msg.emoji) {
+        el('self-status-dot').className = 'status-dot away';
         el('away-input').value = msg.away_message || '';
         if (msg.emoji) {
           el('status-emoji-input').value = msg.emoji;
@@ -666,7 +666,14 @@ function renderBuddyGroup(container, title, list, statusClass) {
       const awayLine = document.createElement('div');
       awayLine.className = 'buddy-away-text';
       awayLine.textContent = `"${buddy.away_message}"`;
-      if (buddy.status_type === 'as') awayLine.style.fontStyle = 'italic';
+      // AS = italic (auto/away), OS = normal weight (custom online status)
+      if (buddy.status_type === 'as') {
+        awayLine.style.fontStyle = 'italic';
+        awayLine.style.color = '#808080';
+      } else {
+        awayLine.style.fontStyle = 'normal';
+        awayLine.style.color = '#000080';
+      }
       items.appendChild(awayLine);
     }
   });
@@ -744,7 +751,9 @@ function handlePresence(username, status, away_message, emoji = '', status_type 
     const chatWith = openChats[username].winEl.querySelector('.chat-with');
     if (chatWith) {
       const emojiHtml = emoji ? renderStatusEmoji(emoji) : '';
-      chatWith.innerHTML = `<div class="status-dot ${status === 'online' ? 'online' : status === 'away' ? 'away' : 'offline'}"></div>${emojiHtml}${username} — ${status}${away_message ? `: "${away_message}"` : ''} <small style="opacity:0.6">(${status_type.toUpperCase()})</small>`;
+      const statusDotClass = status === 'online' ? 'online' : status === 'away' ? 'away' : 'offline';
+      const statusSuffix = away_message ? ` — "${away_message}"` : '';
+      chatWith.innerHTML = `<div class="status-dot ${statusDotClass}"></div>${emojiHtml}${username}${statusSuffix}`;
     }
   }
   renderBuddyList();
@@ -926,7 +935,7 @@ function openRoomWindow(roomName) {
   openRooms[roomName] = { winEl };
 
   winEl.querySelector('.room-close').addEventListener('click', () => { wsSend({ type: 'leave_room', room: roomName }); winEl.style.display = 'none'; delete openRooms[roomName]; updateTaskbar(); });
-  
+
   winEl.querySelector('.room-invite').addEventListener('click', () => {
     el('invite-dialog').style.cssText += ';display:block;top:100px;left:250px';
     focusWindow(el('invite-dialog'));
@@ -1032,11 +1041,11 @@ el('btn-save-away').addEventListener('click', () => {
   const type = Array.from(document.getElementsByName('status-type')).find(r => r.checked)?.value || 'os';
   saveStatus(msg, emoji, type);
 });
-el('btn-clear-away').addEventListener('click', () => { 
-  el('away-input').value = ''; 
+el('btn-clear-away').addEventListener('click', () => {
+  el('away-input').value = '';
   el('status-emoji-input').value = '';
   updateStatusEmojiPreview('');
-  saveStatus('', '', 'os'); 
+  saveStatus('', '', 'os');
 });
 
 el('status-emoji-btn').addEventListener('click', e => {
@@ -1080,11 +1089,11 @@ function createStatusEmojiPicker() {
 async function saveStatus(message, emoji = '', type = 'os') {
   try {
     await apiPost('/away', { message, emoji, status_type: type }, true);
-    // Locally update
-    buddies[myUsername] = { ...buddies[myUsername], away_message: message, emoji, status_type: type };
-    el('self-status-dot').className = 'status-dot ' + (message || emoji ? 'away' : 'online');
+    // Update self dot: OS = stays online, AS = away dot
+    const dotClass = (type === 'as' && message) ? 'away' : (message || emoji ? 'online' : 'online');
+    el('self-status-dot').className = 'status-dot ' + dotClass;
     el('away-dialog').style.display = 'none';
-    renderBuddyList();
+    // Don't touch buddies[myUsername] — not in own buddy list, causes "undefined" bug
   } catch (e) { console.error(e); }
 }
 
@@ -1152,13 +1161,13 @@ el('btn-create-room').addEventListener('click', async () => {
   const buddiesOnly = el('room-buddies-only').checked;
   const inviteOnly = el('room-invite-only').checked;
   if (!name) return;
-  try { 
-    await apiPost('/rooms', { name, topic, buddies_only: buddiesOnly, invite_only: inviteOnly }, true); 
-    el('new-room-input').value = ''; 
+  try {
+    await apiPost('/rooms', { name, topic, buddies_only: buddiesOnly, invite_only: inviteOnly }, true);
+    el('new-room-input').value = '';
     el('new-room-topic').value = '';
     el('room-buddies-only').checked = false;
     el('room-invite-only').checked = false;
-    await refreshRooms(); 
+    await refreshRooms();
   }
   catch (e) { alert(e.message); }
 });
