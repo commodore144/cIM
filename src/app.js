@@ -20,6 +20,10 @@ let totalUnread  = 0;
 let activeEmojiPicker = null;
 let isAdmin      = false;
 let roomInvites  = [];
+// Own status tracking (can't use buddies[myUsername] - not in own list)
+let myStatusType = 'os';   // 'os' or 'as'
+let myStatusMsg  = '';
+let myStatusEmoji = '';
 
 // ── Emoji state ────────────────────────────────────────────────────────────
 let EMOJIS    = [];
@@ -71,6 +75,21 @@ updateClock();
 
 function updateTitle() {
   document.title = totalUnread > 0 ? `(${totalUnread}) cIM — ${myUsername || ''}` : `cIM — ${myUsername || 'Sign On'}`;
+}
+
+function updateSelfStatusLine() {
+  const line = el('self-status-line');
+  if (!line) return;
+  if (!myStatusMsg && !myStatusEmoji) {
+    line.innerHTML = '';
+    return;
+  }
+  const emojiHtml = myStatusEmoji
+    ? `<img class="chat-emoji emoji-inline" src="${EMOJI_PATH}${myStatusEmoji}.png" alt="" style="width:11px;height:11px;vertical-align:middle;margin-right:2px;">`
+    : '';
+  const text = myStatusMsg ? myStatusMsg : '';
+  const style = myStatusType === 'as' ? 'font-style:italic;color:#808080' : 'color:#000080';
+  line.innerHTML = `<span style="${style}">${emojiHtml}${text}</span>`;
 }
 
 // ── Browser Notifications ──────────────────────────────────────────────────
@@ -386,6 +405,7 @@ function enterDesktop() {
   updateSoundBtn(); updateTitle(); requestNotifPerms(); loadEmojis();
   focusWindow(el('buddy-list-window'));
   setCommMode(localStorage.getItem('cim_commmode') || 'ws');
+  startIdleDetection();
 }
 
 if (token && myUsername) enterDesktop();
@@ -438,14 +458,20 @@ function handleWSMessage(msg) {
   switch (msg.type) {
     case 'init':
       el('self-name').textContent = msg.username;
-      if (msg.away_message || msg.emoji) {
-        el('self-status-dot').className = 'status-dot away';
-        el('away-input').value = msg.away_message || '';
-        if (msg.emoji) {
-          el('status-emoji-input').value = msg.emoji;
-          updateStatusEmojiPreview(msg.emoji);
+      // Restore own status from server
+      myStatusMsg   = msg.away_message || '';
+      myStatusEmoji = msg.emoji || '';
+      myStatusType  = msg.status_type || 'os';
+      if (myStatusMsg || myStatusEmoji) {
+        const dotClass = (myStatusType === 'as' && myStatusMsg) ? 'away' : 'online';
+        el('self-status-dot').className = 'status-dot ' + dotClass;
+        el('away-input').value = myStatusMsg;
+        if (myStatusEmoji) {
+          el('status-emoji-input').value = myStatusEmoji;
+          updateStatusEmojiPreview(myStatusEmoji);
         }
       }
+      updateSelfStatusLine();
       msg.buddies.forEach(b => { buddies[b.username] = b; });
       pendingRequests = msg.pending_requests || [];
       roomInvites = msg.room_invites || [];
@@ -935,7 +961,7 @@ function openRoomWindow(roomName) {
   openRooms[roomName] = { winEl };
 
   winEl.querySelector('.room-close').addEventListener('click', () => { wsSend({ type: 'leave_room', room: roomName }); winEl.style.display = 'none'; delete openRooms[roomName]; updateTaskbar(); });
-
+  
   winEl.querySelector('.room-invite').addEventListener('click', () => {
     el('invite-dialog').style.cssText += ';display:block;top:100px;left:250px';
     focusWindow(el('invite-dialog'));
@@ -1041,11 +1067,11 @@ el('btn-save-away').addEventListener('click', () => {
   const type = Array.from(document.getElementsByName('status-type')).find(r => r.checked)?.value || 'os';
   saveStatus(msg, emoji, type);
 });
-el('btn-clear-away').addEventListener('click', () => {
-  el('away-input').value = '';
+el('btn-clear-away').addEventListener('click', () => { 
+  el('away-input').value = ''; 
   el('status-emoji-input').value = '';
   updateStatusEmojiPreview('');
-  saveStatus('', '', 'os');
+  saveStatus('', '', 'os'); 
 });
 
 el('status-emoji-btn').addEventListener('click', e => {
@@ -1089,36 +1115,68 @@ function createStatusEmojiPicker() {
 async function saveStatus(message, emoji = '', type = 'os') {
   try {
     await apiPost('/away', { message, emoji, status_type: type }, true);
-    // Update self dot: OS = stays online, AS = away dot
-    const dotClass = (type === 'as' && message) ? 'away' : (message || emoji ? 'online' : 'online');
+    myStatusMsg   = message;
+    myStatusEmoji = emoji;
+    myStatusType  = type;
+    const dotClass = (type === 'as' && message) ? 'away' : 'online';
     el('self-status-dot').className = 'status-dot ' + dotClass;
     el('away-dialog').style.display = 'none';
-    // Don't touch buddies[myUsername] — not in own buddy list, causes "undefined" bug
+    updateSelfStatusLine();
   } catch (e) { console.error(e); }
 }
 
 // ── Idle Detection (AS) ───────────────────────────────────────────────────
-let idleTimer = null;
+let idleTimer    = null;
+let isIdle       = false;            // are we currently in AS-idle?
+let idleStarted  = false;            // only run after login
 const IDLE_TIMEOUT = 10 * 60 * 1000; // 10 minutes
 
+function startIdleDetection() {
+  idleStarted = true;
+  resetIdleTimer();
+}
+
 function resetIdleTimer() {
+  if (!idleStarted || !token) return;
   clearTimeout(idleTimer);
-  const me = buddies[myUsername];
-  if (me && me.status_type === 'as') {
-    // If we were in AS, clear it when we become active (OS or Online)
+
+  // If coming back from idle, clear the AS status — but only call API once
+  if (isIdle) {
+    isIdle = false;
     saveStatus('', '', 'os');
   }
+
   idleTimer = setTimeout(setIdleStatus, IDLE_TIMEOUT);
 }
 
 function setIdleStatus() {
-  // Set AS status (overrides OS per user request "vice versa")
-  saveStatus('Idle (Autogenerated)', 'zzz', 'as');
+  if (!token || !idleStarted) return;
+  // Only set if not already idling and not on a manual AS status
+  if (!isIdle) {
+    isIdle = true;
+    saveStatus('Idle (Autogenerated)', 'zzz', 'as');
+  }
 }
 
-document.addEventListener('mousemove', resetIdleTimer);
-document.addEventListener('keydown', resetIdleTimer);
-idleTimer = setTimeout(setIdleStatus, IDLE_TIMEOUT);
+// Throttle activity events — max one check per 2 seconds to avoid API spam
+let lastActivityAt = 0;
+function onActivity() {
+  if (!idleStarted) return;
+  const now = Date.now();
+  if (now - lastActivityAt < 2000) {
+    // Still debounce the timer reset even if we skip the API call
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(setIdleStatus, IDLE_TIMEOUT);
+    return;
+  }
+  lastActivityAt = now;
+  resetIdleTimer();
+}
+
+document.addEventListener('mousemove', onActivity);
+document.addEventListener('keydown',   onActivity);
+document.addEventListener('click',     onActivity);
+// Note: startIdleDetection() is called from enterDesktop()
 
 // ── Add Buddy ──────────────────────────────────────────────────────────────
 el('btn-add-buddy').addEventListener('click', () => {
@@ -1161,13 +1219,13 @@ el('btn-create-room').addEventListener('click', async () => {
   const buddiesOnly = el('room-buddies-only').checked;
   const inviteOnly = el('room-invite-only').checked;
   if (!name) return;
-  try {
-    await apiPost('/rooms', { name, topic, buddies_only: buddiesOnly, invite_only: inviteOnly }, true);
-    el('new-room-input').value = '';
+  try { 
+    await apiPost('/rooms', { name, topic, buddies_only: buddiesOnly, invite_only: inviteOnly }, true); 
+    el('new-room-input').value = ''; 
     el('new-room-topic').value = '';
     el('room-buddies-only').checked = false;
     el('room-invite-only').checked = false;
-    await refreshRooms();
+    await refreshRooms(); 
   }
   catch (e) { alert(e.message); }
 });
