@@ -961,7 +961,7 @@ function openRoomWindow(roomName) {
   openRooms[roomName] = { winEl };
 
   winEl.querySelector('.room-close').addEventListener('click', () => { wsSend({ type: 'leave_room', room: roomName }); winEl.style.display = 'none'; delete openRooms[roomName]; updateTaskbar(); });
-  
+
   winEl.querySelector('.room-invite').addEventListener('click', () => {
     el('invite-dialog').style.cssText += ';display:block;top:100px;left:250px';
     focusWindow(el('invite-dialog'));
@@ -1067,11 +1067,11 @@ el('btn-save-away').addEventListener('click', () => {
   const type = Array.from(document.getElementsByName('status-type')).find(r => r.checked)?.value || 'os';
   saveStatus(msg, emoji, type);
 });
-el('btn-clear-away').addEventListener('click', () => { 
-  el('away-input').value = ''; 
+el('btn-clear-away').addEventListener('click', () => {
+  el('away-input').value = '';
   el('status-emoji-input').value = '';
   updateStatusEmojiPreview('');
-  saveStatus('', '', 'os'); 
+  saveStatus('', '', 'os');
 });
 
 el('status-emoji-btn').addEventListener('click', e => {
@@ -1219,13 +1219,13 @@ el('btn-create-room').addEventListener('click', async () => {
   const buddiesOnly = el('room-buddies-only').checked;
   const inviteOnly = el('room-invite-only').checked;
   if (!name) return;
-  try { 
-    await apiPost('/rooms', { name, topic, buddies_only: buddiesOnly, invite_only: inviteOnly }, true); 
-    el('new-room-input').value = ''; 
+  try {
+    await apiPost('/rooms', { name, topic, buddies_only: buddiesOnly, invite_only: inviteOnly }, true);
+    el('new-room-input').value = '';
     el('new-room-topic').value = '';
     el('room-buddies-only').checked = false;
     el('room-invite-only').checked = false;
-    await refreshRooms(); 
+    await refreshRooms();
   }
   catch (e) { alert(e.message); }
 });
