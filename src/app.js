@@ -21,9 +21,14 @@ let activeEmojiPicker = null;
 let isAdmin      = false;
 let roomInvites  = [];
 // Own status tracking (can't use buddies[myUsername] - not in own list)
-let myStatusType = 'os';   // 'os' or 'as'
-let myStatusMsg  = '';
+let myStatusType  = 'os';   // 'os' or 'as'
+let myStatusMsg   = '';
 let myStatusEmoji = '';
+// Idle detection
+let idleTimer     = null;
+let isIdle        = false;   // currently in AS-idle?
+let idleStarted   = false;   // only run after login
+let lastActivityAt = 0;
 
 // ── Emoji state ────────────────────────────────────────────────────────────
 let EMOJIS    = [];
@@ -961,7 +966,7 @@ function openRoomWindow(roomName) {
   openRooms[roomName] = { winEl };
 
   winEl.querySelector('.room-close').addEventListener('click', () => { wsSend({ type: 'leave_room', room: roomName }); winEl.style.display = 'none'; delete openRooms[roomName]; updateTaskbar(); });
-
+  
   winEl.querySelector('.room-invite').addEventListener('click', () => {
     el('invite-dialog').style.cssText += ';display:block;top:100px;left:250px';
     focusWindow(el('invite-dialog'));
@@ -1067,11 +1072,11 @@ el('btn-save-away').addEventListener('click', () => {
   const type = Array.from(document.getElementsByName('status-type')).find(r => r.checked)?.value || 'os';
   saveStatus(msg, emoji, type);
 });
-el('btn-clear-away').addEventListener('click', () => {
-  el('away-input').value = '';
+el('btn-clear-away').addEventListener('click', () => { 
+  el('away-input').value = ''; 
   el('status-emoji-input').value = '';
   updateStatusEmojiPreview('');
-  saveStatus('', '', 'os');
+  saveStatus('', '', 'os'); 
 });
 
 el('status-emoji-btn').addEventListener('click', e => {
@@ -1126,9 +1131,6 @@ async function saveStatus(message, emoji = '', type = 'os') {
 }
 
 // ── Idle Detection (AS) ───────────────────────────────────────────────────
-let idleTimer    = null;
-let isIdle       = false;            // are we currently in AS-idle?
-let idleStarted  = false;            // only run after login
 const IDLE_TIMEOUT = 10 * 60 * 1000; // 10 minutes
 
 function startIdleDetection() {
@@ -1159,7 +1161,6 @@ function setIdleStatus() {
 }
 
 // Throttle activity events — max one check per 2 seconds to avoid API spam
-let lastActivityAt = 0;
 function onActivity() {
   if (!idleStarted) return;
   const now = Date.now();
@@ -1219,13 +1220,13 @@ el('btn-create-room').addEventListener('click', async () => {
   const buddiesOnly = el('room-buddies-only').checked;
   const inviteOnly = el('room-invite-only').checked;
   if (!name) return;
-  try {
-    await apiPost('/rooms', { name, topic, buddies_only: buddiesOnly, invite_only: inviteOnly }, true);
-    el('new-room-input').value = '';
+  try { 
+    await apiPost('/rooms', { name, topic, buddies_only: buddiesOnly, invite_only: inviteOnly }, true); 
+    el('new-room-input').value = ''; 
     el('new-room-topic').value = '';
     el('room-buddies-only').checked = false;
     el('room-invite-only').checked = false;
-    await refreshRooms();
+    await refreshRooms(); 
   }
   catch (e) { alert(e.message); }
 });
@@ -1390,3 +1391,4 @@ function openAbout() {
 }
 el('btn-close-about').addEventListener('click',    () => { el('about-dialog').style.display = 'none'; });
 el('btn-close-about-ok').addEventListener('click', () => { el('about-dialog').style.display = 'none'; });
+
