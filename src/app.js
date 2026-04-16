@@ -29,6 +29,7 @@ let idleTimer     = null;
 let isIdle        = false;   // currently in AS-idle?
 let idleStarted   = false;   // only run after login
 let lastActivityAt = 0;
+const IDLE_TIMEOUT  = 10 * 60 * 1000; // 10 minutes
 
 // ── Emoji state ────────────────────────────────────────────────────────────
 let EMOJIS    = [];
@@ -367,6 +368,7 @@ el('btn-show-register').addEventListener('click', () => {
 });
 
 async function doLogin() {
+  requestNotifPerms();
   const username = el('login-username').value.trim(), password = el('login-password').value;
   el('login-error').textContent = '';
   if (!username || !password) { el('login-error').textContent = 'Fill in all fields'; return; }
@@ -379,6 +381,7 @@ async function doLogin() {
 }
 
 async function doRegister() {
+  requestNotifPerms();
   const username = el('login-username').value.trim(), password = el('login-password').value;
   el('login-error').textContent = '';
   if (!username || !password) { el('login-error').textContent = 'Fill in all fields'; return; }
@@ -407,7 +410,7 @@ function enterDesktop() {
   makeDraggable(el('admin-window'),     el('admin-titlebar'));
   makeDraggable(el('invite-dialog'),    el('invite-titlebar'));
 
-  updateSoundBtn(); updateTitle(); requestNotifPerms(); loadEmojis();
+  updateSoundBtn(); updateTitle(); loadEmojis();
   focusWindow(el('buddy-list-window'));
   setCommMode(localStorage.getItem('cim_commmode') || 'ws');
   startIdleDetection();
@@ -966,7 +969,7 @@ function openRoomWindow(roomName) {
   openRooms[roomName] = { winEl };
 
   winEl.querySelector('.room-close').addEventListener('click', () => { wsSend({ type: 'leave_room', room: roomName }); winEl.style.display = 'none'; delete openRooms[roomName]; updateTaskbar(); });
-  
+
   winEl.querySelector('.room-invite').addEventListener('click', () => {
     el('invite-dialog').style.cssText += ';display:block;top:100px;left:250px';
     focusWindow(el('invite-dialog'));
@@ -1072,11 +1075,11 @@ el('btn-save-away').addEventListener('click', () => {
   const type = Array.from(document.getElementsByName('status-type')).find(r => r.checked)?.value || 'os';
   saveStatus(msg, emoji, type);
 });
-el('btn-clear-away').addEventListener('click', () => { 
-  el('away-input').value = ''; 
+el('btn-clear-away').addEventListener('click', () => {
+  el('away-input').value = '';
   el('status-emoji-input').value = '';
   updateStatusEmojiPreview('');
-  saveStatus('', '', 'os'); 
+  saveStatus('', '', 'os');
 });
 
 el('status-emoji-btn').addEventListener('click', e => {
@@ -1131,8 +1134,6 @@ async function saveStatus(message, emoji = '', type = 'os') {
 }
 
 // ── Idle Detection (AS) ───────────────────────────────────────────────────
-const IDLE_TIMEOUT = 10 * 60 * 1000; // 10 minutes
-
 function startIdleDetection() {
   idleStarted = true;
   resetIdleTimer();
@@ -1220,13 +1221,13 @@ el('btn-create-room').addEventListener('click', async () => {
   const buddiesOnly = el('room-buddies-only').checked;
   const inviteOnly = el('room-invite-only').checked;
   if (!name) return;
-  try { 
-    await apiPost('/rooms', { name, topic, buddies_only: buddiesOnly, invite_only: inviteOnly }, true); 
-    el('new-room-input').value = ''; 
+  try {
+    await apiPost('/rooms', { name, topic, buddies_only: buddiesOnly, invite_only: inviteOnly }, true);
+    el('new-room-input').value = '';
     el('new-room-topic').value = '';
     el('room-buddies-only').checked = false;
     el('room-invite-only').checked = false;
-    await refreshRooms(); 
+    await refreshRooms();
   }
   catch (e) { alert(e.message); }
 });
@@ -1391,4 +1392,3 @@ function openAbout() {
 }
 el('btn-close-about').addEventListener('click',    () => { el('about-dialog').style.display = 'none'; });
 el('btn-close-about-ok').addEventListener('click', () => { el('about-dialog').style.display = 'none'; });
-
