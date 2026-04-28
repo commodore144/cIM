@@ -1099,7 +1099,7 @@ function createStatusEmojiPicker() {
   EMOJIS.forEach(name => {
     const btn = document.createElement('button');
     btn.className = 'emoji-btn';
-    btn.innerHTML = `<img src="${EMOJI_PATH}${name}.png" style="width:20px;height:20px;">`;
+    btn.innerHTML = `<img src="${EMOJI_PATH}${name}.png" style="width:20px;height:20px;image-rendering: pixelated;">`;
     btn.addEventListener('mousedown', e => {
       e.preventDefault();
       el('status-emoji-input').value = name;
