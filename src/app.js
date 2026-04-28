@@ -38,10 +38,11 @@ let recentEmojis = JSON.parse(localStorage.getItem('cim_recent_emojis') || '[]')
 
 async function loadEmojis() {
   try {
-    const res = await fetch(`${EMOJI_PATH}emojis.json`);
-    EMOJIS    = await res.json();
+    const res  = await fetch(`${API}/eref`);
+    const data = await res.json();
+    EMOJIS    = data.emojis;
     EMOJI_SET = new Set(EMOJIS);
-  } catch (e) { console.warn('Could not load emojis.json:', e); }
+  } catch (e) { console.warn('Could not load emojis from /eref:', e); }
 }
 
 // ── Audio ──────────────────────────────────────────────────────────────────
