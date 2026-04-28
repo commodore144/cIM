@@ -145,7 +145,7 @@ function renderContent(rawText) {
 function renderStatusEmoji(name) {
   name = name.replace(/:/g, '');
   if (EMOJI_SET.has(name)) {
-    return `<img class="status-emoji" src="${EMOJI_PATH}${name}.png" alt=":${name}:" title=":${name}:" style="width:16px; height:16px; margin-right:4px; vertical-align:middle;">`;
+    return `<img class="status-emoji" src="${EMOJI_PATH}${name}.png" alt=":${name}:" title=":${name}:" style="width:16px; height:16px; margin-right:4px; vertical-align:middle; image-rendering:pixelated;">`;
   }
   return '';
 }
@@ -154,7 +154,7 @@ function updateStatusEmojiPreview(name) {
   name = name.replace(/:/g, '');
   const btn = el('status-emoji-btn');
   if (EMOJI_SET.has(name)) {
-    btn.innerHTML = `<img src="${EMOJI_PATH}${name}.png" style="width:20px; height:20px;">`;
+    btn.innerHTML = `<img src="${EMOJI_PATH}${name}.png" style="width:20px; height:20px;image-rendering:pixelated;">`;
   } else {
     btn.innerHTML = '';
   }
