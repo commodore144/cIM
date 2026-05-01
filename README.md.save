@@ -1,0 +1,21 @@
+# cIM
+commodore. Instant Messenger - AIM-Inspired chat server! ("commodore." refers to me the developer not the C64 or brand behind it no affiliation whatsoever) 
+
+# Bot SDK:
+i made cim bots. i'll explain later but heres the SDK and a simple tut on how to register one.
+
+## Registration
+   1. Open up yo dayum terminal, we gettin real.
+   2. First you need your user token. This is obtainable by doing
+     ```
+       curl -X POST https://inspire.tail0e8d21.ts.net/cim/login \
+	-H "Content-Type: application/json" \
+	-d '{"username": "USER_HERE", "password": "PASSWORD_HERE"}' 
+     ```
+    or for my loyal [apic](https://github.com/Knittight/apic) users
+    you do:
+    ```
+	apic -p https://inspire.tail0e8d21.ts.net/cim/login --body '{"username":"user", "password":"pass"}'  
+    ``` 
+    And if you did it right, you should get your user token (DO NOT SHARE IT AT ALL)
+   3. send aPOST request 
