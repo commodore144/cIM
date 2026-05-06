@@ -1465,6 +1465,11 @@ desktopEl.addEventListener('contextmenu', e => {
     e.preventDefault();
     menu.remove();
     const win = document.getElementById('minesweeper-window');
+    if (win.style.display === 'none' || (!win.style.top && !win.style.left)) {
+      const pos = placeWindowCascade();
+      win.style.top = pos.top + 'px';
+      win.style.left = pos.left + 'px';
+    }
     win.style.display = 'block';
     focusWindow(win);
     initMinesweeper();
@@ -1493,6 +1498,11 @@ const dpScaling = document.getElementById('dp-scaling');
 let tempBgImage = 'none';
 
 function openDisplayProperties() {
+  if (dpWin.style.display === 'none' || (!dpWin.style.top && !dpWin.style.left)) {
+    const pos = placeWindowCascade();
+    dpWin.style.top = pos.top + 'px';
+    dpWin.style.left = pos.left + 'px';
+  }
   dpWin.style.display = 'block';
   focusWindow(dpWin);
   
