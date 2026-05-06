@@ -1358,11 +1358,17 @@ async function loadAdminRooms() {
           <span class="room-entry-name">#${r.name} ${r.is_private ? '🔒' : ''}</span>
           <span class="room-entry-count" style="margin-left:8px;">${r.members.length} online</span>
         </div>
-        <button class="cim-btn">Delete</button>
+        <button class="cim-btn wipe-btn">Wipe</button>
+        <button class="cim-btn del-btn" style="margin-left:4px;">Delete</button>
       `;
-      div.querySelector('button').addEventListener('click', async () => {
+      div.querySelector('.wipe-btn').addEventListener('click', async () => {
+        if (!confirm(`Wipe chat history for room #${r.name}?`)) return;
+        try { await apiDelete(`/admin/rooms/${encodeURIComponent(r.name)}/history`); showToast(`History wiped for #${r.name}`); }
+        catch (e) { showToast(e.message); }
+      });
+      div.querySelector('.del-btn').addEventListener('click', async () => {
         if (!confirm(`Delete room #${r.name}?`)) return;
-        try { await apiDelete(`/admin/rooms/${r.name}`); loadAdminRooms(); }
+        try { await apiDelete(`/admin/rooms/${encodeURIComponent(r.name)}`); loadAdminRooms(); }
         catch (e) { showToast(e.message); }
       });
       list.appendChild(div);
