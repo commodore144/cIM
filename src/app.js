@@ -1453,7 +1453,7 @@ desktopEl.addEventListener('contextmenu', e => {
   const optProps = document.createElement('div');
   optProps.className = 'desktop-menu-item';
   optProps.textContent = 'Display Properties...';
-  optProps.onclick = () => { openDisplayProperties(); };
+  optProps.addEventListener('mousedown', (e) => { e.preventDefault(); menu.remove(); openDisplayProperties(); });
 
   const sep = document.createElement('div');
   sep.className = 'desktop-menu-sep';
@@ -1461,12 +1461,14 @@ desktopEl.addEventListener('contextmenu', e => {
   const optMs = document.createElement('div');
   optMs.className = 'desktop-menu-item';
   optMs.textContent = 'Minesweeper';
-  optMs.onclick = () => {
+  optMs.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    menu.remove();
     const win = document.getElementById('minesweeper-window');
     win.style.display = 'block';
     focusWindow(win);
     initMinesweeper();
-  };
+  });
 
   menu.appendChild(optProps);
   menu.appendChild(sep);
