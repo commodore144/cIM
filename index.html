@@ -190,6 +190,57 @@
 
     <input type="file" id="bg-file-input" accept="image/*" style="display:none;" />
 
+    <!-- Display Properties Window -->
+    <div class="cim-window" id="display-properties-dialog" style="display:none; width: 320px;">
+      <div class="titlebar" id="display-properties-titlebar">
+        <div class="titlebar-icon">🖥️</div>
+        <span class="titlebar-title">Display Properties</span>
+        <div class="titlebar-buttons">
+          <button class="win-btn close" id="btn-close-display-properties">✕</button>
+        </div>
+      </div>
+      <div style="padding: 8px; background: silver;">
+        <!-- Preview section -->
+        <fieldset style="border: 2px groove #fff; padding: 6px; margin-bottom: 8px;">
+          <legend style="padding: 0 4px; font-family: Arial; font-size: 11px;">Preview</legend>
+          <div id="dp-preview-box" style="width: 100%; height: 120px; border: 2px inset #fff; background-color: #008080; background-position: center; background-repeat: no-repeat; background-size: cover; margin-bottom: 4px;"></div>
+        </fieldset>
+
+        <!-- Background settings -->
+        <fieldset style="border: 2px groove #fff; padding: 6px; margin-bottom: 8px; font-family: Arial; font-size: 11px;">
+          <legend style="padding: 0 4px;">Background</legend>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <label>Color:</label>
+              <input type="color" id="dp-color" value="#008080" style="padding: 0; width: 40px; height: 20px; border: 2px inset #fff;">
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <label>Image:</label>
+              <div>
+                <button class="cim-btn" id="btn-dp-browse" style="width: 60px;">Browse...</button>
+                <button class="cim-btn" id="btn-dp-clear" style="width: 60px;">Clear</button>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <label>Scaling:</label>
+              <select id="dp-scaling" class="cim-input" style="width: 124px; font-family: Arial; font-size: 11px;">
+                <option value="cover">Cover (Fill)</option>
+                <option value="contain">Contain (Fit)</option>
+                <option value="auto">Center</option>
+                <option value="repeat">Tile (Repeat)</option>
+              </select>
+            </div>
+          </div>
+        </fieldset>
+
+        <div style="display: flex; justify-content: flex-end; gap: 4px;">
+          <button class="cim-btn" id="btn-dp-ok" style="width: 60px;">OK</button>
+          <button class="cim-btn" id="btn-dp-cancel" style="width: 60px;">Cancel</button>
+          <button class="cim-btn" id="btn-dp-apply" style="width: 60px;">Apply</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- About Dialog -->

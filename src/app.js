@@ -1407,12 +1407,37 @@ const bgInput = document.getElementById('bg-file-input');
 function loadBackground() {
   const bgColor = localStorage.getItem('cim_bg_color');
   const bgImg = localStorage.getItem('cim_bg_image');
+  const scaling = localStorage.getItem('cim_bg_scaling') || 'cover';
+  
   if (bgColor) desktopEl.style.backgroundColor = bgColor;
-  if (bgImg) {
-    if (bgImg === 'none') desktopEl.style.backgroundImage = 'none';
-    else desktopEl.style.backgroundImage = `url(${bgImg})`;
+  if (bgImg && bgImg !== 'none') {
+    desktopEl.style.backgroundImage = `url(${bgImg})`;
+    applyScalingToEl(desktopEl, scaling);
+  } else {
+    desktopEl.style.backgroundImage = 'none';
   }
 }
+
+function applyScalingToEl(el, scaling) {
+  if (scaling === 'cover') {
+    el.style.backgroundSize = 'cover';
+    el.style.backgroundRepeat = 'no-repeat';
+    el.style.backgroundPosition = 'center';
+  } else if (scaling === 'contain') {
+    el.style.backgroundSize = 'contain';
+    el.style.backgroundRepeat = 'no-repeat';
+    el.style.backgroundPosition = 'center';
+  } else if (scaling === 'auto') {
+    el.style.backgroundSize = 'auto';
+    el.style.backgroundRepeat = 'no-repeat';
+    el.style.backgroundPosition = 'center';
+  } else if (scaling === 'repeat') {
+    el.style.backgroundSize = 'auto';
+    el.style.backgroundRepeat = 'repeat';
+    el.style.backgroundPosition = 'top left';
+  }
+}
+
 loadBackground();
 
 desktopEl.addEventListener('contextmenu', e => {
@@ -1425,29 +1450,10 @@ desktopEl.addEventListener('contextmenu', e => {
   menu.style.left = e.clientX + 'px'; 
   menu.style.top = e.clientY + 'px';
   
-  const optColor = document.createElement('div');
-  optColor.className = 'desktop-menu-item';
-  optColor.textContent = 'Change Background Color...';
-  optColor.onclick = () => {
-    const color = prompt('Enter a color (e.g. #008080, teal):', localStorage.getItem('cim_bg_color') || '#008080');
-    if (color) {
-      desktopEl.style.backgroundColor = color;
-      localStorage.setItem('cim_bg_color', color);
-    }
-  };
-
-  const optImg = document.createElement('div');
-  optImg.className = 'desktop-menu-item';
-  optImg.textContent = 'Change Background Image...';
-  optImg.onclick = () => { bgInput.click(); };
-
-  const optClearImg = document.createElement('div');
-  optClearImg.className = 'desktop-menu-item';
-  optClearImg.textContent = 'Clear Background Image';
-  optClearImg.onclick = () => {
-    desktopEl.style.backgroundImage = 'none';
-    localStorage.setItem('cim_bg_image', 'none');
-  };
+  const optProps = document.createElement('div');
+  optProps.className = 'desktop-menu-item';
+  optProps.textContent = 'Display Properties...';
+  optProps.onclick = () => { openDisplayProperties(); };
 
   const sep = document.createElement('div');
   sep.className = 'desktop-menu-sep';
@@ -1462,9 +1468,7 @@ desktopEl.addEventListener('contextmenu', e => {
     initMinesweeper();
   };
 
-  menu.appendChild(optColor);
-  menu.appendChild(optImg);
-  menu.appendChild(optClearImg);
+  menu.appendChild(optProps);
   menu.appendChild(sep);
   menu.appendChild(optMs);
   
@@ -1476,22 +1480,81 @@ desktopEl.addEventListener('contextmenu', e => {
   }, 0);
 });
 
+// ── Display Properties Window ──────────────────────────────────────────────
+const dpWin = document.getElementById('display-properties-dialog');
+const dpTitle = document.getElementById('display-properties-titlebar');
+makeDraggable(dpWin, dpTitle);
+
+const dpPreview = document.getElementById('dp-preview-box');
+const dpColor = document.getElementById('dp-color');
+const dpScaling = document.getElementById('dp-scaling');
+let tempBgImage = 'none';
+
+function openDisplayProperties() {
+  dpWin.style.display = 'block';
+  focusWindow(dpWin);
+  
+  const savedColor = localStorage.getItem('cim_bg_color') || '#008080';
+  const savedImage = localStorage.getItem('cim_bg_image') || 'none';
+  const savedScaling = localStorage.getItem('cim_bg_scaling') || 'cover';
+  
+  dpColor.value = savedColor;
+  dpScaling.value = savedScaling;
+  tempBgImage = savedImage;
+  
+  updateDisplayPreview();
+}
+
+function updateDisplayPreview() {
+  dpPreview.style.backgroundColor = dpColor.value;
+  if (tempBgImage !== 'none') {
+    dpPreview.style.backgroundImage = `url(${tempBgImage})`;
+    applyScalingToEl(dpPreview, dpScaling.value);
+  } else {
+    dpPreview.style.backgroundImage = 'none';
+  }
+}
+
+dpColor.addEventListener('input', updateDisplayPreview);
+dpScaling.addEventListener('change', updateDisplayPreview);
+
+document.getElementById('btn-close-display-properties').addEventListener('click', () => { dpWin.style.display = 'none'; });
+document.getElementById('btn-dp-cancel').addEventListener('click', () => { dpWin.style.display = 'none'; });
+
+document.getElementById('btn-dp-clear').addEventListener('click', () => {
+  tempBgImage = 'none';
+  updateDisplayPreview();
+});
+
+document.getElementById('btn-dp-browse').addEventListener('click', () => { bgInput.click(); });
+
 bgInput.addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
-    const dataUrl = ev.target.result;
-    desktopEl.style.backgroundImage = `url(${dataUrl})`;
-    // Limit storage so we don't hit localStorage limits easily, but base64 is necessary
-    try {
-      localStorage.setItem('cim_bg_image', dataUrl);
-    } catch (err) {
-      alert('Image too large to save to localStorage.');
-    }
+    tempBgImage = ev.target.result;
+    updateDisplayPreview();
   };
   reader.readAsDataURL(file);
 });
+
+document.getElementById('btn-dp-apply').addEventListener('click', applyDisplayProperties);
+document.getElementById('btn-dp-ok').addEventListener('click', () => {
+  applyDisplayProperties();
+  dpWin.style.display = 'none';
+});
+
+function applyDisplayProperties() {
+  localStorage.setItem('cim_bg_color', dpColor.value);
+  try {
+    localStorage.setItem('cim_bg_image', tempBgImage);
+  } catch (err) {
+    alert('Image too large to save to localStorage.');
+  }
+  localStorage.setItem('cim_bg_scaling', dpScaling.value);
+  loadBackground();
+}
 
 // ── Minesweeper minigame ───────────────────────────────────────────────────
 makeDraggable(document.getElementById('minesweeper-window'), document.getElementById('minesweeper-titlebar'));
