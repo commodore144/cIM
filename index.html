@@ -154,7 +154,41 @@
           <button class="cim-btn" id="btn-create-room">Create</button>
         </div>
       </div>
+      </div>
     </div>
+
+    <!-- Minesweeper Window -->
+    <div class="cim-window" id="minesweeper-window" style="display:none;">
+      <div class="titlebar" id="minesweeper-titlebar">
+        <div class="titlebar-icon">💣</div>
+        <span class="titlebar-title">Minesweeper</span>
+        <div class="titlebar-buttons">
+          <button class="win-btn close" id="btn-close-minesweeper">✕</button>
+        </div>
+      </div>
+      <div style="padding:4px; background:silver;">
+        <div class="ms-controls">
+          <select id="ms-difficulty">
+            <option value="beginner">Beginner (9x9, 10)</option>
+            <option value="intermediate">Intermediate (16x16, 40)</option>
+            <option value="expert">Expert (30x16, 99)</option>
+            <option value="custom">Custom...</option>
+          </select>
+          <input type="number" id="ms-custom-w" placeholder="W" style="width:40px; display:none;" min="5" max="50">
+          <input type="number" id="ms-custom-h" placeholder="H" style="width:40px; display:none;" min="5" max="50">
+          <input type="number" id="ms-custom-m" placeholder="M" style="width:40px; display:none;" min="1" max="999">
+          <button class="cim-btn" id="btn-ms-new">New</button>
+        </div>
+        <div class="ms-header">
+          <div class="ms-counter" id="ms-mines-count">010</div>
+          <div class="ms-face-btn" id="ms-face">🙂</div>
+          <div class="ms-counter" id="ms-timer">000</div>
+        </div>
+        <div class="ms-board" id="ms-board"></div>
+      </div>
+    </div>
+
+    <input type="file" id="bg-file-input" accept="image/*" style="display:none;" />
 
   </div>
 
@@ -172,7 +206,7 @@
         <div class="about-logo-icon">🏃‍♂️</div>
         <div class="about-logo-text">
           <div class="about-product">cIM</div>
-          <div class="about-version">Version 1.1</div>
+          <div class="about-version">Version 1.2</div>
         </div>
       </div>
       <div class="about-divider"></div>

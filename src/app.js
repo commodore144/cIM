@@ -692,7 +692,8 @@ function renderBuddyGroup(container, title, list, statusClass) {
     const entry = document.createElement('div');
     entry.className = `buddy-entry ${statusClass}`;
     const emojiHtml = buddy.emoji ? renderStatusEmoji(buddy.emoji) : '';
-    entry.innerHTML = `<div class="status-dot ${statusClass}"></div>${emojiHtml}<span class="buddy-name">${buddy.username}</span>`;
+    const botHtml = buddy.is_bot ? '<span class="bot-badge">BOT</span>' : '';
+    entry.innerHTML = `<div class="status-dot ${statusClass}"></div>${emojiHtml}<span class="buddy-name">${buddy.username}</span>${botHtml}`;
     entry.addEventListener('dblclick', () => openDMWindow(buddy.username));
     entry.addEventListener('contextmenu', e => { e.preventDefault(); showBuddyContextMenu(e.clientX, e.clientY, buddy.username); });
     items.appendChild(entry);
@@ -891,7 +892,9 @@ function appendDMMessage(username, side, sender, content, timestamp) {
   if (side !== 'system' && sender) {
     const top = document.createElement('div');
     top.className = 'msg-top';
-    top.innerHTML = `<span class="msg-sender">${sender}</span><span class="msg-time">${formatTime(timestamp)}</span>`;
+    const b = buddies[sender] || {};
+    const botHtml = b.is_bot ? '<span class="bot-badge">BOT</span>' : '';
+    top.innerHTML = `<span class="msg-sender">${sender}</span>${botHtml}<span class="msg-time">${formatTime(timestamp)}</span>`;
     div.appendChild(top);
   }
 
@@ -1016,7 +1019,9 @@ function appendRoomMessage(roomName, from, content, timestamp) {
   if (!isSystem) {
     const top = document.createElement('div');
     top.className = 'msg-top';
-    top.innerHTML = `<span class="msg-sender">${from}</span><span class="msg-time">${formatTime(timestamp)}</span>`;
+    const b = buddies[from] || {};
+    const botHtml = b.is_bot ? '<span class="bot-badge">BOT</span>' : '';
+    top.innerHTML = `<span class="msg-sender">${from}</span>${botHtml}<span class="msg-time">${formatTime(timestamp)}</span>`;
     div.appendChild(top);
     const text = document.createElement('div');
     text.className = 'msg-text';
@@ -1040,9 +1045,10 @@ function updateRoomMembers(roomName, members) {
   members.forEach(m => {
     const div = document.createElement('div');
     div.className = 'room-member';
-    const b = buddies[m] || { online: true, status: 'online', emoji: '' };
+    const b = buddies[m] || { online: true, status: 'online', emoji: '', is_bot: false };
     const emojiHtml = b.emoji ? renderStatusEmoji(b.emoji) : '';
-    div.innerHTML = `<div class="status-dot online"></div>${emojiHtml}${m}`;
+    const botHtml = b.is_bot ? '<span class="bot-badge">BOT</span>' : '';
+    div.innerHTML = `<div class="status-dot online"></div>${emojiHtml}${m}${botHtml}`;
     div.addEventListener('dblclick', () => openDMWindow(m));
     container.appendChild(div);
   });
@@ -1393,3 +1399,291 @@ function openAbout() {
 }
 el('btn-close-about').addEventListener('click',    () => { el('about-dialog').style.display = 'none'; });
 el('btn-close-about-ok').addEventListener('click', () => { el('about-dialog').style.display = 'none'; });
+
+// ── Background Customization ───────────────────────────────────────────────
+const desktopEl = document.getElementById('desktop');
+const bgInput = document.getElementById('bg-file-input');
+
+function loadBackground() {
+  const bgColor = localStorage.getItem('cim_bg_color');
+  const bgImg = localStorage.getItem('cim_bg_image');
+  if (bgColor) desktopEl.style.backgroundColor = bgColor;
+  if (bgImg) {
+    if (bgImg === 'none') desktopEl.style.backgroundImage = 'none';
+    else desktopEl.style.backgroundImage = `url(${bgImg})`;
+  }
+}
+loadBackground();
+
+desktopEl.addEventListener('contextmenu', e => {
+  if (e.target !== desktopEl) return;
+  e.preventDefault();
+  document.querySelectorAll('.desktop-menu').forEach(m => m.remove());
+  
+  const menu = document.createElement('div');
+  menu.className = 'desktop-menu';
+  menu.style.left = e.clientX + 'px'; 
+  menu.style.top = e.clientY + 'px';
+  
+  const optColor = document.createElement('div');
+  optColor.className = 'desktop-menu-item';
+  optColor.textContent = 'Change Background Color...';
+  optColor.onclick = () => {
+    const color = prompt('Enter a color (e.g. #008080, teal):', localStorage.getItem('cim_bg_color') || '#008080');
+    if (color) {
+      desktopEl.style.backgroundColor = color;
+      localStorage.setItem('cim_bg_color', color);
+    }
+  };
+
+  const optImg = document.createElement('div');
+  optImg.className = 'desktop-menu-item';
+  optImg.textContent = 'Change Background Image...';
+  optImg.onclick = () => { bgInput.click(); };
+
+  const optClearImg = document.createElement('div');
+  optClearImg.className = 'desktop-menu-item';
+  optClearImg.textContent = 'Clear Background Image';
+  optClearImg.onclick = () => {
+    desktopEl.style.backgroundImage = 'none';
+    localStorage.setItem('cim_bg_image', 'none');
+  };
+
+  const sep = document.createElement('div');
+  sep.className = 'desktop-menu-sep';
+
+  const optMs = document.createElement('div');
+  optMs.className = 'desktop-menu-item';
+  optMs.textContent = 'Minesweeper';
+  optMs.onclick = () => {
+    const win = document.getElementById('minesweeper-window');
+    win.style.display = 'block';
+    focusWindow(win);
+    initMinesweeper();
+  };
+
+  menu.appendChild(optColor);
+  menu.appendChild(optImg);
+  menu.appendChild(optClearImg);
+  menu.appendChild(sep);
+  menu.appendChild(optMs);
+  
+  document.body.appendChild(menu);
+
+  setTimeout(() => {
+    function close(e2) { if (!menu.contains(e2.target)) { menu.remove(); document.removeEventListener('mousedown', close); } }
+    document.addEventListener('mousedown', close);
+  }, 0);
+});
+
+bgInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const dataUrl = ev.target.result;
+    desktopEl.style.backgroundImage = `url(${dataUrl})`;
+    // Limit storage so we don't hit localStorage limits easily, but base64 is necessary
+    try {
+      localStorage.setItem('cim_bg_image', dataUrl);
+    } catch (err) {
+      alert('Image too large to save to localStorage.');
+    }
+  };
+  reader.readAsDataURL(file);
+});
+
+// ── Minesweeper minigame ───────────────────────────────────────────────────
+makeDraggable(document.getElementById('minesweeper-window'), document.getElementById('minesweeper-titlebar'));
+document.getElementById('btn-close-minesweeper').addEventListener('click', () => { document.getElementById('minesweeper-window').style.display = 'none'; });
+
+let msBoard = [], msRevealed = 0, msMines = 10, msW = 9, msH = 9, msFlags = 0;
+let msTimer = null, msTime = 0, msGameOver = false, msFirstClick = true;
+
+const diffSelect = document.getElementById('ms-difficulty');
+const custW = document.getElementById('ms-custom-w');
+const custH = document.getElementById('ms-custom-h');
+const custM = document.getElementById('ms-custom-m');
+
+diffSelect.addEventListener('change', () => {
+  const isCustom = diffSelect.value === 'custom';
+  custW.style.display = isCustom ? 'inline-block' : 'none';
+  custH.style.display = isCustom ? 'inline-block' : 'none';
+  custM.style.display = isCustom ? 'inline-block' : 'none';
+  if(!isCustom) initMinesweeper();
+});
+
+document.getElementById('btn-ms-new').addEventListener('click', initMinesweeper);
+document.getElementById('ms-face').addEventListener('click', initMinesweeper);
+
+function formatMSCounter(val) {
+  if (val < -99) return "-99";
+  if (val < 0) return "-" + Math.abs(val).toString().padStart(2, '0');
+  return val.toString().padStart(3, '0');
+}
+
+function initMinesweeper() {
+  clearInterval(msTimer);
+  msTime = 0;
+  msGameOver = false;
+  msFirstClick = true;
+  document.getElementById('ms-timer').textContent = "000";
+  document.getElementById('ms-face').textContent = "🙂";
+  
+  const diff = diffSelect.value;
+  if(diff === 'beginner') { msW = 9; msH = 9; msMines = 10; }
+  else if(diff === 'intermediate') { msW = 16; msH = 16; msMines = 40; }
+  else if(diff === 'expert') { msW = 30; msH = 16; msMines = 99; }
+  else {
+    msW = Math.max(5, Math.min(50, parseInt(custW.value) || 9));
+    msH = Math.max(5, Math.min(50, parseInt(custH.value) || 9));
+    msMines = Math.max(1, Math.min(msW * msH - 1, parseInt(custM.value) || 10));
+    custW.value = msW; custH.value = msH; custM.value = msMines;
+  }
+  
+  msFlags = 0;
+  msRevealed = 0;
+  document.getElementById('ms-mines-count').textContent = formatMSCounter(msMines);
+
+  const boardEl = document.getElementById('ms-board');
+  boardEl.style.gridTemplateColumns = `repeat(${msW}, 16px)`;
+  boardEl.style.width = `${msW * 16 + 6}px`; // accounting for 3px inset borders
+  boardEl.innerHTML = '';
+  
+  msBoard = Array(msH).fill(null).map(() => Array(msW).fill(0));
+  
+  for(let y = 0; y < msH; y++) {
+    for(let x = 0; x < msW; x++) {
+      const cell = document.createElement('div');
+      cell.className = 'ms-cell';
+      cell.dataset.x = x;
+      cell.dataset.y = y;
+      
+      cell.addEventListener('mousedown', (e) => {
+        if(msGameOver) return;
+        if(e.button === 2) { // right click
+          e.preventDefault();
+          if(cell.classList.contains('revealed')) return;
+          if(cell.textContent === '🚩') {
+            cell.textContent = '';
+            msFlags--;
+          } else {
+            cell.textContent = '🚩';
+            msFlags++;
+          }
+          document.getElementById('ms-mines-count').textContent = formatMSCounter(msMines - msFlags);
+        } else if(e.button === 0) { // left click
+          if(cell.textContent === '🚩' || cell.classList.contains('revealed')) return;
+          if(msFirstClick) {
+            placeMines(x, y);
+            msFirstClick = false;
+            msTimer = setInterval(() => {
+              msTime = Math.min(999, msTime + 1);
+              document.getElementById('ms-timer').textContent = formatMSCounter(msTime);
+            }, 1000);
+          }
+          revealCell(x, y);
+          checkWin();
+        }
+      });
+      boardEl.appendChild(cell);
+    }
+  }
+  
+  // Disable default context menu in minesweeper board
+  boardEl.oncontextmenu = (e) => e.preventDefault();
+}
+
+function placeMines(firstX, firstY) {
+  let placed = 0;
+  while(placed < msMines) {
+    let rx = Math.floor(Math.random() * msW);
+    let ry = Math.floor(Math.random() * msH);
+    if(msBoard[ry][rx] !== 'M' && !(rx === firstX && ry === firstY)) {
+      msBoard[ry][rx] = 'M';
+      placed++;
+    }
+  }
+  
+  for(let y = 0; y < msH; y++) {
+    for(let x = 0; x < msW; x++) {
+      if(msBoard[y][x] === 'M') continue;
+      let c = 0;
+      for(let dy = -1; dy <= 1; dy++) {
+        for(let dx = -1; dx <= 1; dx++) {
+          if(y+dy >= 0 && y+dy < msH && x+dx >= 0 && x+dx < msW) {
+            if(msBoard[y+dy][x+dx] === 'M') c++;
+          }
+        }
+      }
+      msBoard[y][x] = c;
+    }
+  }
+}
+
+function revealCell(x, y) {
+  const cell = document.querySelector(`.ms-cell[data-x="${x}"][data-y="${y}"]`);
+  if(!cell || cell.classList.contains('revealed') || cell.textContent === '🚩') return;
+  
+  cell.classList.add('revealed');
+  msRevealed++;
+  
+  if(msBoard[y][x] === 'M') {
+    cell.classList.add('mine');
+    cell.textContent = '💣';
+    gameOver(false);
+    return;
+  }
+  
+  if(msBoard[y][x] > 0) {
+    cell.textContent = msBoard[y][x];
+    cell.dataset.val = msBoard[y][x];
+  } else {
+    for(let dy = -1; dy <= 1; dy++) {
+      for(let dx = -1; dx <= 1; dx++) {
+        if(y+dy >= 0 && y+dy < msH && x+dx >= 0 && x+dx < msW) {
+          revealCell(x+dx, y+dy);
+        }
+      }
+    }
+  }
+}
+
+function checkWin() {
+  if(msRevealed === msW * msH - msMines) {
+    gameOver(true);
+  }
+}
+
+function gameOver(win) {
+  msGameOver = true;
+  clearInterval(msTimer);
+  document.getElementById('ms-face').textContent = win ? "😎" : "😵";
+  
+  // Reveal all mines if lost
+  if(!win) {
+    for(let y = 0; y < msH; y++) {
+      for(let x = 0; x < msW; x++) {
+        if(msBoard[y][x] === 'M') {
+          const cell = document.querySelector(`.ms-cell[data-x="${x}"][data-y="${y}"]`);
+          if(cell.textContent !== '🚩') {
+            cell.classList.add('revealed');
+            cell.textContent = '💣';
+          }
+        }
+      }
+    }
+  } else {
+    // Flag all remaining mines
+    document.getElementById('ms-mines-count').textContent = "000";
+    for(let y = 0; y < msH; y++) {
+      for(let x = 0; x < msW; x++) {
+        if(msBoard[y][x] === 'M') {
+          const cell = document.querySelector(`.ms-cell[data-x="${x}"][data-y="${y}"]`);
+          if(cell.textContent !== '🚩') cell.textContent = '🚩';
+        }
+      }
+    }
+  }
+}
+
