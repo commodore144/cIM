@@ -704,6 +704,7 @@ body {
   box-shadow: 2px 2px 0 #808080;
   z-index: 99998;
   user-select: none;
+  overflow: visible;
 }
 #start-menu.open { display: block; }
 
@@ -1592,5 +1593,6 @@ body {
   margin-top: 4px;
   display: none;
 }
+
 
 
