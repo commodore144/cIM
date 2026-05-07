@@ -1574,7 +1574,271 @@ function applyDisplayProperties() {
   loadBackground();
 }
 
-// ── Minesweeper minigame ───────────────────────────────────────────────────
+// ── Sudoku minigame ────────────────────────────────────────────────────────
+makeDraggable(document.getElementById('sudoku-window'), document.getElementById('sudoku-titlebar'));
+document.getElementById('btn-close-sudoku').addEventListener('click', () => { document.getElementById('sudoku-window').style.display = 'none'; });
+
+let sdkPuzzle = [], sdkSolution = [], sdkUserGrid = [];
+let sdkSelected = null;  // {r, c}
+let sdkMistakes = 0, sdkMaxMistakes = Infinity;
+let sdkTimerInterval = null, sdkElapsed = 0, sdkGameOver = false;
+
+const sdkDifficultyClues = { easy: 38, medium: 28, hard: 22 };
+
+// Sudoku generator
+function sdkGenerateSolution() {
+  const grid = Array.from({length: 9}, () => Array(9).fill(0));
+  sdkFillGrid(grid);
+  return grid;
+}
+
+function sdkFillGrid(grid) {
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      if (grid[r][c] === 0) {
+        const nums = [1,2,3,4,5,6,7,8,9].sort(() => Math.random() - 0.5);
+        for (const n of nums) {
+          if (sdkIsValid(grid, r, c, n)) {
+            grid[r][c] = n;
+            if (sdkFillGrid(grid)) return true;
+            grid[r][c] = 0;
+          }
+        }
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+function sdkIsValid(grid, row, col, num) {
+  for (let i = 0; i < 9; i++) {
+    if (grid[row][i] === num || grid[i][col] === num) return false;
+  }
+  const br = Math.floor(row / 3) * 3, bc = Math.floor(col / 3) * 3;
+  for (let dr = 0; dr < 3; dr++)
+    for (let dc = 0; dc < 3; dc++)
+      if (grid[br+dr][bc+dc] === num) return false;
+  return true;
+}
+
+function sdkMakePuzzle(solution, clues) {
+  const puzzle = solution.map(r => [...r]);
+  const cells = [];
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) cells.push([r, c]);
+  cells.sort(() => Math.random() - 0.5);
+  let toRemove = 81 - clues;
+  for (const [r, c] of cells) {
+    if (toRemove <= 0) break;
+    puzzle[r][c] = 0;
+    toRemove--;
+  }
+  return puzzle;
+}
+
+function initSudoku() {
+  clearInterval(sdkTimerInterval);
+  sdkElapsed = 0; sdkMistakes = 0; sdkGameOver = false; sdkSelected = null;
+  updateSdkStatus();
+
+  const diff = document.getElementById('sdk-difficulty').value;
+  const clues = sdkDifficultyClues[diff] || 28;
+  sdkSolution = sdkGenerateSolution();
+  sdkPuzzle   = sdkMakePuzzle(sdkSolution, clues);
+  sdkUserGrid = sdkPuzzle.map(r => [...r]);
+
+  renderSdkBoard();
+  renderSdkNumpad();
+
+  sdkTimerInterval = setInterval(() => {
+    if (!sdkGameOver) {
+      sdkElapsed++;
+      updateSdkStatus();
+    }
+  }, 1000);
+
+  const banner = document.getElementById('sdk-board').nextElementSibling;
+  if (banner && banner.classList.contains('sdk-complete-banner')) banner.style.display = 'none';
+}
+
+function renderSdkBoard() {
+  const board = document.getElementById('sdk-board');
+  board.innerHTML = '';
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'sdk-cell';
+      cell.dataset.r = r; cell.dataset.c = c;
+
+      // Box borders
+      if (c === 2 || c === 5) cell.classList.add('box-right');
+      if (r === 2 || r === 5) cell.classList.add('box-bottom');
+
+      const val = sdkUserGrid[r][c];
+      if (sdkPuzzle[r][c] !== 0) {
+        cell.classList.add('given');
+        cell.textContent = val;
+      } else if (val !== 0) {
+        cell.textContent = val;
+        if (val !== sdkSolution[r][c]) cell.classList.add('error');
+      }
+
+      cell.addEventListener('click', () => sdkSelectCell(r, c));
+      board.appendChild(cell);
+    }
+  }
+  if (sdkSelected) sdkHighlight(sdkSelected.r, sdkSelected.c);
+}
+
+function sdkSelectCell(r, c) {
+  if (sdkGameOver) return;
+  sdkSelected = { r, c };
+  sdkHighlight(r, c);
+}
+
+function sdkHighlight(r, c) {
+  document.querySelectorAll('.sdk-cell').forEach(cell => {
+    const cr = parseInt(cell.dataset.r), cc = parseInt(cell.dataset.c);
+    cell.classList.remove('selected', 'highlight');
+    const sameBox = Math.floor(cr/3)===Math.floor(r/3) && Math.floor(cc/3)===Math.floor(c/3);
+    if (cr === r && cc === c) cell.classList.add('selected');
+    else if (cr === r || cc === c || sameBox) cell.classList.add('highlight');
+  });
+}
+
+function sdkEnterNumber(num) {
+  if (!sdkSelected || sdkGameOver) return;
+  const { r, c } = sdkSelected;
+  if (sdkPuzzle[r][c] !== 0) return;  // given cell
+
+  sdkUserGrid[r][c] = num;
+  if (num !== 0 && num !== sdkSolution[r][c]) {
+    sdkMistakes++;
+    updateSdkStatus();
+  }
+
+  renderSdkBoard();
+  if (sdkCheckComplete()) {
+    sdkGameOver = true;
+    clearInterval(sdkTimerInterval);
+    const mins = String(Math.floor(sdkElapsed/60)).padStart(2,'0');
+    const secs = String(sdkElapsed%60).padStart(2,'0');
+    showSdkBanner(`🎉 Solved in ${mins}:${secs}!`);
+  }
+}
+
+function sdkRevealAll() {
+  sdkUserGrid = sdkSolution.map(r => [...r]);
+  renderSdkBoard();
+}
+
+function sdkCheckComplete() {
+  for (let r = 0; r < 9; r++)
+    for (let c = 0; c < 9; c++)
+      if (sdkUserGrid[r][c] !== sdkSolution[r][c]) return false;
+  return true;
+}
+
+function sdkHint() {
+  if (sdkGameOver) return;
+  const empties = [];
+  for (let r = 0; r < 9; r++)
+    for (let c = 0; c < 9; c++)
+      if (sdkPuzzle[r][c] === 0 && sdkUserGrid[r][c] !== sdkSolution[r][c]) empties.push([r,c]);
+  if (!empties.length) return;
+  const [r, c] = empties[Math.floor(Math.random() * empties.length)];
+  sdkSelected = { r, c };
+  sdkUserGrid[r][c] = sdkSolution[r][c];
+  renderSdkBoard();
+  if (sdkCheckComplete()) {
+    sdkGameOver = true;
+    clearInterval(sdkTimerInterval);
+    showSdkBanner('🎉 Puzzle complete!');
+  }
+}
+
+function updateSdkStatus() {
+  const mins = String(Math.floor(sdkElapsed/60)).padStart(2,'0');
+  const secs = String(sdkElapsed%60).padStart(2,'0');
+  document.getElementById('sdk-mistakes').textContent = `Mistakes: ${sdkMistakes}`;
+  document.getElementById('sdk-timer-display').textContent = `${mins}:${secs}`;
+}
+
+function showSdkBanner(msg) {
+  let banner = document.querySelector('.sdk-complete-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.className = 'sdk-complete-banner';
+    document.getElementById('sdk-board').after(banner);
+  }
+  banner.textContent = msg;
+  banner.style.display = 'block';
+}
+
+function renderSdkNumpad() {
+  const pad = document.getElementById('sdk-numpad');
+  pad.innerHTML = '';
+  for (let n = 1; n <= 9; n++) {
+    const btn = document.createElement('button');
+    btn.className = 'sdk-num-btn';
+    btn.textContent = n;
+    btn.addEventListener('click', () => sdkEnterNumber(n));
+    pad.appendChild(btn);
+  }
+  const erase = document.createElement('button');
+  erase.className = 'sdk-num-btn erase';
+  erase.textContent = '⌫';
+  erase.title = 'Erase';
+  erase.addEventListener('click', () => sdkEnterNumber(0));
+  pad.appendChild(erase);
+}
+
+// Keyboard input for Sudoku
+document.addEventListener('keydown', e => {
+  const sdkWin = document.getElementById('sudoku-window');
+  if (sdkWin.style.display === 'none') return;
+  const focused = document.querySelector('.cim-window.focused');
+  if (focused !== sdkWin) return;
+  if (e.key >= '1' && e.key <= '9') sdkEnterNumber(parseInt(e.key));
+  if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') sdkEnterNumber(0);
+  if (sdkSelected) {
+    const { r, c } = sdkSelected;
+    if (e.key === 'ArrowUp'    && r > 0) sdkSelectCell(r-1, c);
+    if (e.key === 'ArrowDown'  && r < 8) sdkSelectCell(r+1, c);
+    if (e.key === 'ArrowLeft'  && c > 0) sdkSelectCell(r, c-1);
+    if (e.key === 'ArrowRight' && c < 8) sdkSelectCell(r, c+1);
+  }
+}, true);
+
+document.getElementById('btn-sdk-new').addEventListener('click', initSudoku);
+document.getElementById('btn-sdk-hint').addEventListener('click', sdkHint);
+
+// Start Menu hook (added after enterDesktop sets up smenu items)
+document.getElementById('smenu-minesweeper').addEventListener('click', () => {
+  const win = document.getElementById('minesweeper-window');
+  document.getElementById('start-menu').classList.remove('open');
+  if (win.style.display === 'none') {
+    win.style.display = 'block';
+    win.style.top  = '60px';
+    win.style.left = '320px';
+    initMinesweeper();
+  }
+  focusWindow(win);
+});
+
+document.getElementById('smenu-sudoku').addEventListener('click', () => {
+  const win = document.getElementById('sudoku-window');
+  document.getElementById('start-menu').classList.remove('open');
+  if (win.style.display === 'none') {
+    win.style.display = 'block';
+    win.style.top  = '60px';
+    win.style.left = '320px';
+    makeDraggable(win, document.getElementById('sudoku-titlebar'));
+    if (!sdkPuzzle.length) initSudoku();
+  }
+  focusWindow(win);
+});
+
 makeDraggable(document.getElementById('minesweeper-window'), document.getElementById('minesweeper-titlebar'));
 document.getElementById('btn-close-minesweeper').addEventListener('click', () => { document.getElementById('minesweeper-window').style.display = 'none'; });
 
@@ -1767,4 +2031,5 @@ function gameOver(win) {
     }
   }
 }
+
 

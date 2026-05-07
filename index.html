@@ -188,6 +188,34 @@
       </div>
     </div>
 
+    <!-- Sudoku Window -->
+    <div class="cim-window" id="sudoku-window" style="display:none;">
+      <div class="titlebar" id="sudoku-titlebar">
+        <div class="titlebar-icon">🔢</div>
+        <span class="titlebar-title">Sudoku</span>
+        <div class="titlebar-buttons">
+          <button class="win-btn close" id="btn-close-sudoku">✕</button>
+        </div>
+      </div>
+      <div style="padding:4px; background:silver;">
+        <div class="sdk-controls">
+          <select id="sdk-difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+          <button class="cim-btn" id="btn-sdk-new">New</button>
+          <button class="cim-btn" id="btn-sdk-hint">Hint</button>
+        </div>
+        <div class="sdk-status-bar">
+          <span id="sdk-mistakes">Mistakes: 0/3</span>
+          <span id="sdk-timer-display">00:00</span>
+        </div>
+        <div class="sdk-board" id="sdk-board"></div>
+        <div class="sdk-numpad" id="sdk-numpad"></div>
+      </div>
+    </div>
+
     <input type="file" id="bg-file-input" accept="image/*" style="display:none;" />
 
     <!-- Display Properties Window -->
@@ -327,6 +355,14 @@
       <div class="start-menu-item" id="smenu-away"><span class="smenu-icon">💬</span> Set Status</div>
       <div class="start-menu-item" id="smenu-add-buddy"><span class="smenu-icon">👤</span> Add a Buddy</div>
       <div class="start-menu-divider"></div>
+      <div class="start-menu-item start-menu-has-sub" id="smenu-games">
+        <span class="smenu-icon">🎮</span> Games
+        <span class="smenu-arrow">▶</span>
+        <div class="start-submenu" id="smenu-games-sub">
+          <div class="start-menu-item" id="smenu-minesweeper"><span class="smenu-icon">💣</span> Minesweeper</div>
+          <div class="start-menu-item" id="smenu-sudoku"><span class="smenu-icon">🔢</span> Sudoku</div>
+        </div>
+      </div>
       <div class="start-menu-item" id="smenu-about"><span class="smenu-icon">❓</span> About cIM</div>
       <div class="start-menu-divider"></div>
       <div class="start-menu-item" id="smenu-admin" style="display:none;"><span class="smenu-icon">🛡️</span> Admin Panel</div>
@@ -357,4 +393,5 @@
 </body>
 
 </html>
+
 

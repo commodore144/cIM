@@ -1068,6 +1068,40 @@ body {
 .smenu-icon { font-size: 16px; width: 20px; text-align: center; }
 .start-menu-divider { height: 1px; background: #808080; margin: 3px 0; border-bottom: 1px solid #fff; }
 
+/* ── Start Menu Submenu ───────────────────────────────── */
+.start-menu-has-sub {
+  position: relative;
+}
+
+.smenu-arrow {
+  margin-left: auto;
+  font-size: 10px;
+  padding-right: 2px;
+}
+
+.start-submenu {
+  display: none;
+  position: absolute;
+  left: 100%;
+  top: 0;
+  background: silver;
+  border: 2px solid;
+  border-color: #dfdfdf #000 #000 #dfdfdf;
+  box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+  min-width: 160px;
+  z-index: 100000;
+  padding: 2px 0;
+}
+
+.start-menu-has-sub:hover .start-submenu {
+  display: block;
+}
+
+.start-submenu .start-menu-item {
+  padding: 5px 12px;
+  white-space: nowrap;
+}
+
 /* ── Buddy Requests section ───────────────────────────── */
 .buddy-requests-section {
   border-bottom: 2px solid #808080;
@@ -1434,7 +1468,129 @@ body {
   margin-bottom: 4px;
 }
 
-.ms-controls select, .ms-controls input {
+/* ── Sudoku ──────────────────────────────────────────────────────────────── */
+.sdk-controls {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+  align-items: center;
+}
+
+.sdk-controls select {
   font-family: Consolas, monospace;
   font-size: 11px;
 }
+
+.sdk-status-bar {
+  display: flex;
+  justify-content: space-between;
+  font-family: Consolas, monospace;
+  font-size: 12px;
+  background: black;
+  color: red;
+  padding: 2px 6px;
+  border: 1px inset #808080;
+  margin-bottom: 4px;
+  letter-spacing: 1px;
+}
+
+.sdk-board {
+  display: grid;
+  grid-template-columns: repeat(9, 32px);
+  grid-template-rows: repeat(9, 32px);
+  border: 3px inset #fff;
+  background: #808080;
+  gap: 1px;
+  width: fit-content;
+}
+
+.sdk-cell {
+  width: 32px;
+  height: 32px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-family: Arial, sans-serif;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  color: #000080;
+  border: 1px solid #c0c0c0;
+}
+
+.sdk-cell.given {
+  background: #dfdfdf;
+  color: #000;
+  cursor: default;
+}
+
+.sdk-cell.selected {
+  background: #000080 !important;
+  color: #fff !important;
+}
+
+.sdk-cell.highlight {
+  background: #c8d8f8;
+}
+
+.sdk-cell.error {
+  color: #cc0000 !important;
+  background: #ffc0c0 !important;
+}
+
+.sdk-cell.box-right  { border-right: 2px solid #000; }
+.sdk-cell.box-bottom { border-bottom: 2px solid #000; }
+
+.sdk-numpad {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  justify-content: center;
+}
+
+.sdk-num-btn {
+  width: 28px;
+  height: 28px;
+  background: var(--win-bg);
+  border: 1px solid;
+  border-color: #fff #000 #000 #fff;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: #000080;
+}
+
+.sdk-num-btn:active {
+  border-color: #000 #fff #fff #000;
+  padding-top: 1px;
+  padding-left: 1px;
+}
+
+.sdk-num-btn.erase {
+  font-size: 11px;
+  color: #800000;
+  width: 36px;
+}
+
+.sdk-complete-banner {
+  text-align: center;
+  font-family: Consolas, monospace;
+  font-size: 13px;
+  color: #000080;
+  font-weight: bold;
+  padding: 4px;
+  background: #ffffc0;
+  border: 1px solid #808080;
+  margin-top: 4px;
+  display: none;
+}
+
+
