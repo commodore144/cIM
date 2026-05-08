@@ -1033,11 +1033,12 @@ function sendRoomMsg(roomName) {
 
 function appendRoomMessage(roomName, from, content, timestamp, is_bot = false) {
   if (content.startsWith('__CHESS_MOVE__:')) {
-    const coords = content.replace('__CHESS_MOVE__:', '').split('->');
-    const [r1, c1] = coords[0].split(',').map(Number);
-    const [r2, c2] = coords[1].split(',').map(Number);
-    if (window.chessBoards && window.chessBoards[roomName]) {
-      window.chessBoards[roomName].move(r1, c1, r2, c2);
+    const moveObj = JSON.parse(content.replace('__CHESS_MOVE__:', ''));
+    if (window.chessGames && window.chessGames[roomName]) {
+      const chess = window.chessGames[roomName].chess;
+      chess.move(moveObj);
+      window.chessGames[roomName].render();
+      
       if (from === myUsername && Math.random() < 0.4) {
          const comments = [
            "omg {color} can not play chess",
@@ -1051,15 +1052,26 @@ function appendRoomMessage(roomName, from, content, timestamp, is_bot = false) {
            "my grandma plays better than this"
          ];
          let c = comments[Math.floor(Math.random() * comments.length)];
-         c = c.replace('{color}', Math.random() > 0.5 ? 'white' : 'black');
+         c = c.replace('{color}', chess.turn() === 'w' ? 'black' : 'white');
          wsSend({ type: 'room_message', room: roomName, content: `__BOT__:${c}` });
+      }
+      
+      if (from === myUsername && chess.game_over()) {
+         let res = "Game over!";
+         if (chess.in_checkmate()) res = "Checkmate!";
+         else if (chess.in_stalemate()) res = "Stalemate!";
+         else if (chess.in_draw()) res = "Draw!";
+         wsSend({ type: 'room_message', room: roomName, content: `__BOT__:The game has ended! ${res}` });
       }
     }
     return;
   }
   
   if (content === '__CHESS_RESET__') {
-    if (window.chessBoards && window.chessBoards[roomName]) window.chessBoards[roomName].reset();
+    if (window.chessGames && window.chessGames[roomName]) {
+      window.chessGames[roomName].chess.reset();
+      window.chessGames[roomName].render();
+    }
     return;
   }
   
@@ -1068,6 +1080,7 @@ function appendRoomMessage(roomName, from, content, timestamp, is_bot = false) {
     content = content.replace('__BOT__:', '');
     is_bot = true;
   }
+
 
   const container = document.getElementById(`room-msgs-${roomName}`);
   if (!container) return;
@@ -2125,50 +2138,71 @@ function inviteToChess(username) {
 
 function initChessBoard(roomName) {
   const boardEl = document.getElementById(`chess-board-${roomName}`);
-  const initialBoard = [
-    ['♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜'],
-    ['♟', '♟', '♟', '♟', '♟', '♟', '♟', '♟'],
-    ['', '', '', '', '', '', '', ''],
-    ['', '', '', '', '', '', '', ''],
-    ['', '', '', '', '', '', '', ''],
-    ['', '', '', '', '', '', '', ''],
-    ['♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙'],
-    ['♖', '♘', '♗', '♕', '♔', '♗', '♘', '♖']
-  ];
-  let boardState = JSON.parse(JSON.stringify(initialBoard));
+  const chess = new Chess();
+  
+  const names = roomName.replace('chess-', '').split('-');
+  const whitePlayer = names[0];
+  const blackPlayer = names[1];
+  const myColor = (myUsername === whitePlayer) ? 'w' : (myUsername === blackPlayer ? 'b' : null);
+
+  const pieceMap = {
+    'p': { 'w': '♙', 'b': '♟' },
+    'n': { 'w': '♘', 'b': '♞' },
+    'b': { 'w': '♗', 'b': '♝' },
+    'r': { 'w': '♖', 'b': '♜' },
+    'q': { 'w': '♕', 'b': '♛' },
+    'k': { 'w': '♔', 'b': '♚' }
+  };
+
   let selectedSquare = null;
 
   function renderBoard() {
     boardEl.innerHTML = '';
+    const boardState = chess.board();
+    const isFlipped = myColor === 'b';
+
     for (let r = 0; r < 8; r++) {
       for (let c = 0; c < 8; c++) {
         const sq = document.createElement('div');
-        const isDark = (r + c) % 2 === 1;
+        const visualR = isFlipped ? 7 - r : r;
+        const visualC = isFlipped ? 7 - c : c;
+        
+        const isDark = (visualR + visualC) % 2 === 1;
         sq.style.backgroundColor = isDark ? '#808080' : '#dfdfdf';
         sq.style.display = 'flex';
         sq.style.alignItems = 'center';
         sq.style.justifyContent = 'center';
-        sq.style.fontSize = '24px';
+        sq.style.fontSize = '32px';
         sq.style.cursor = 'pointer';
         sq.style.userSelect = 'none';
+
+        const piece = boardState[visualR][visualC];
+        if (piece) sq.textContent = pieceMap[piece.type][piece.color];
         
-        if (selectedSquare && selectedSquare.r === r && selectedSquare.c === c) {
+        const squareName = String.fromCharCode(97 + visualC) + (8 - visualR);
+
+        if (selectedSquare === squareName) {
           sq.style.backgroundColor = '#ffffc0';
         }
-        
-        sq.textContent = boardState[r][c];
-        
+
         sq.addEventListener('mousedown', () => {
+          if (!myColor || chess.turn() !== myColor) return;
+
           if (selectedSquare) {
-            if (selectedSquare.r !== r || selectedSquare.c !== c) {
-               const moveMsg = `__CHESS_MOVE__:${selectedSquare.r},${selectedSquare.c}->${r},${c}`;
-               wsSend({ type: 'room_message', room: roomName, content: moveMsg });
+            if (selectedSquare !== squareName) {
+              const moves = chess.moves({ square: selectedSquare, verbose: true });
+              const move = moves.find(m => m.to === squareName);
+              if (move) {
+                 const promotion = move.flags.includes('p') ? 'q' : undefined;
+                 const moveMsg = `__CHESS_MOVE__:${JSON.stringify({ from: selectedSquare, to: squareName, promotion })}`;
+                 wsSend({ type: 'room_message', room: roomName, content: moveMsg });
+              }
             }
             selectedSquare = null;
             renderBoard();
           } else {
-            if (boardState[r][c]) {
-              selectedSquare = {r, c};
+            if (piece && piece.color === myColor) {
+              selectedSquare = squareName;
               renderBoard();
             }
           }
@@ -2181,17 +2215,10 @@ function initChessBoard(roomName) {
   
   renderBoard();
   
-  if (!window.chessBoards) window.chessBoards = {};
-  window.chessBoards[roomName] = {
-    move: (r1, c1, r2, c2) => {
-      boardState[r2][c2] = boardState[r1][c1];
-      boardState[r1][c1] = '';
-      renderBoard();
-    },
-    reset: () => {
-      boardState = JSON.parse(JSON.stringify(initialBoard));
-      renderBoard();
-    }
+  if (!window.chessGames) window.chessGames = {};
+  window.chessGames[roomName] = {
+    chess: chess,
+    render: renderBoard
   };
 
   document.getElementById(`chess-reset-${roomName}`).addEventListener('click', () => {
