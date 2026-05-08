@@ -491,12 +491,12 @@ function handleWSMessage(msg) {
       }
       renderBuddyList();
       break;
-    case 'dm':                receiveDM(msg.from, msg.content); break;
+    case 'dm':                receiveDM(msg.from, msg.content, msg.is_bot); break;
     case 'dm_echo':           appendDMMessage(msg.to, 'self', myUsername, msg.content); break;
     case 'typing':            showTyping(msg.from); break;
     case 'presence':          handlePresence(msg.user, msg.status, msg.away_message, msg.emoji, msg.status_type); break;
     case 'room_message':
-    case 'room_message_echo': appendRoomMessage(msg.room, msg.from, msg.content); break;
+    case 'room_message_echo': appendRoomMessage(msg.room, msg.from, msg.content, msg.timestamp || new Date().toISOString(), msg.is_bot); break;
     case 'room_joined':       onRoomJoined(msg.room, msg.members); break;
     case 'room_event':        handleRoomEvent(msg); break;
     case 'buddy_request':     handleIncomingRequest(msg.from); break;
@@ -539,7 +539,8 @@ function handleBuddyAccepted(msg) {
     status: msg.status,
     away_message: msg.away_message || '',
     emoji: msg.emoji || '',
-    status_type: msg.status_type || 'os'
+    status_type: msg.status_type || 'os',
+    is_bot: msg.is_bot || false
   };
   playBuddyOnSound();
   sendNotif('cIM', `${msg.username} accepted your buddy request!`);
@@ -735,6 +736,7 @@ function showBuddyContextMenu(x, y, username) {
 
   [
     { label: '✉ Send Message', fn: () => openDMWindow(username) },
+    { label: '♞ Invite to chess', fn: () => inviteToChess(username) },
     { sep: true },
     { label: '✕ Remove Buddy', fn: () => removeBuddy(username), danger: true },
   ].forEach(item => {
@@ -870,11 +872,11 @@ function sendDM(username) {
   wsSend({ type: 'dm', to: username, content });
 }
 
-function receiveDM(from, content) {
+function receiveDM(from, content, is_bot = false) {
   playMsgSound();
   sendNotif(`Message from ${from}`, content.replace(/:([a-z0-9_-]+):/g, ':$1:'));
   if (!openChats[from]) openDMWindow(from);
-  appendDMMessage(from, 'other', from, content);
+  appendDMMessage(from, 'other', from, content, new Date().toISOString(), is_bot);
   const focused = document.querySelector('.cim-window.focused');
   if (focused !== openChats[from]?.winEl) {
     openChats[from].unread = (openChats[from].unread || 0) + 1;
@@ -882,7 +884,7 @@ function receiveDM(from, content) {
   }
 }
 
-function appendDMMessage(username, side, sender, content, timestamp) {
+function appendDMMessage(username, side, sender, content, timestamp, is_bot = false) {
   const container = document.getElementById(`msgs-${username}`);
   if (!container) return;
 
@@ -893,8 +895,12 @@ function appendDMMessage(username, side, sender, content, timestamp) {
     const top = document.createElement('div');
     top.className = 'msg-top';
     const b = buddies[sender] || {};
-    const botHtml = b.is_bot ? '<span class="bot-badge">BOT</span>' : '';
-    top.innerHTML = `<span class="msg-sender">${sender}</span>${botHtml}<span class="msg-time">${formatTime(timestamp)}</span>`;
+    const actuallyBot = is_bot || b.is_bot;
+    const botHtml = actuallyBot ? '<span class="bot-badge">BOT</span>' : '';
+    top.innerHTML = `<div style="display:flex;align-items:center;">
+                       <span class="msg-sender">${sender}</span>${botHtml}
+                     </div>
+                     <span class="msg-time">${formatTime(timestamp)}</span>`;
     div.appendChild(top);
   }
 
@@ -945,24 +951,35 @@ function openRoomWindow(roomName) {
 
   const pos = placeWindowCascade();
   const winEl = document.createElement('div');
+  const isChess = roomName.startsWith('chess-');
   winEl.className = 'cim-window room-window';
+  if (isChess) winEl.style.width = '600px';
   winEl.style.top = pos.top + 'px'; winEl.style.left = pos.left + 'px';
   winEl.innerHTML = `
     <div class="titlebar" id="room-title-${roomName}">
-      <span class="titlebar-icon">🚪</span>
-      <span class="titlebar-title">#${roomName}</span>
+      <span class="titlebar-icon">${isChess ? '♞' : '🚪'}</span>
+      <span class="titlebar-title">${isChess ? 'Chess Match: ' + roomName.replace('chess-', '') : '#' + roomName}</span>
       <div class="titlebar-buttons">
-        <button class="win-btn room-invite" title="Invite User">➕</button>
+        ${!isChess ? `<button class="win-btn room-invite" title="Invite User">➕</button>` : ''}
         <button class="win-btn close room-close">✕</button>
       </div>
     </div>
     <div class="room-layout">
+      ${isChess ? `
+        <div class="chess-container" style="width: 256px; border: 2px inset #fff; display: flex; flex-direction: column; background: silver; padding: 4px; flex-shrink: 0;">
+          <div style="display:flex; justify-content:space-between; color:black; font-family:Arial; font-size:12px; font-weight:bold; margin-bottom:4px">
+            <span>Play Chess</span>
+            <button class="cim-btn" id="chess-reset-${roomName}" style="padding:0 4px">Reset</button>
+          </div>
+          <div id="chess-board-${roomName}" style="width:240px; height:240px; display:grid; grid-template-columns:repeat(8, 1fr); border:2px inset #fff; background:#fff"></div>
+        </div>
+      ` : ''}
       <div class="room-messages" id="room-msgs-${roomName}"></div>
-      <div class="room-members" id="room-members-${roomName}"><div class="room-members-header">USERS</div></div>
+      ${!isChess ? `<div class="room-members" id="room-members-${roomName}"><div class="room-members-header">USERS</div></div>` : ''}
     </div>
     <div class="chat-input-row">
       <button class="emoji-trigger" id="emoji-btn-room-${roomName}" title="Emojis">😊</button>
-      <textarea class="chat-input" id="room-input-${roomName}" placeholder="#${roomName}..."></textarea>
+      <textarea class="chat-input" id="room-input-${roomName}" placeholder="${isChess ? 'Chat...' : '#' + roomName + '...'}"></textarea>
       <button class="send-btn" id="room-send-${roomName}">Send</button>
     </div>
   `;
@@ -974,13 +991,15 @@ function openRoomWindow(roomName) {
 
   winEl.querySelector('.room-close').addEventListener('click', () => { wsSend({ type: 'leave_room', room: roomName }); winEl.style.display = 'none'; delete openRooms[roomName]; updateTaskbar(); });
 
-  winEl.querySelector('.room-invite').addEventListener('click', () => {
-    el('invite-dialog').style.cssText += ';display:block;top:100px;left:250px';
-    focusWindow(el('invite-dialog'));
-    el('invite-msg').textContent = '';
-    el('invite-input').value = '';
-    el('invite-input').dataset.room = roomName;
-  });
+  if (!isChess) {
+    winEl.querySelector('.room-invite').addEventListener('click', () => {
+      el('invite-dialog').style.cssText += ';display:block;top:100px;left:250px';
+      focusWindow(el('invite-dialog'));
+      el('invite-msg').textContent = '';
+      el('invite-input').value = '';
+      el('invite-input').dataset.room = roomName;
+    });
+  }
 
   const roomInputEl = document.getElementById(`room-input-${roomName}`);
   document.getElementById(`room-send-${roomName}`).addEventListener('click', () => sendRoomMsg(roomName));
@@ -991,6 +1010,9 @@ function openRoomWindow(roomName) {
 
   wsSend({ type: 'join_room', room: roomName });
   loadRoomHistory(roomName);
+  
+  if (isChess) initChessBoard(roomName);
+  
   updateTaskbar();
 }
 
@@ -1009,7 +1031,44 @@ function sendRoomMsg(roomName) {
   wsSend({ type: 'room_message', room: roomName, content });
 }
 
-function appendRoomMessage(roomName, from, content, timestamp) {
+function appendRoomMessage(roomName, from, content, timestamp, is_bot = false) {
+  if (content.startsWith('__CHESS_MOVE__:')) {
+    const coords = content.replace('__CHESS_MOVE__:', '').split('->');
+    const [r1, c1] = coords[0].split(',').map(Number);
+    const [r2, c2] = coords[1].split(',').map(Number);
+    if (window.chessBoards && window.chessBoards[roomName]) {
+      window.chessBoards[roomName].move(r1, c1, r2, c2);
+      if (from === myUsername && Math.random() < 0.4) {
+         const comments = [
+           "omg {color} can not play chess",
+           "magnus carlsen is shaking right now",
+           "-# insert bad move here",
+           "blunder??",
+           "i wouldn't have done that...",
+           "chat, is this real?",
+           "gg go next",
+           "bro is cooking absolutely nothing",
+           "my grandma plays better than this"
+         ];
+         let c = comments[Math.floor(Math.random() * comments.length)];
+         c = c.replace('{color}', Math.random() > 0.5 ? 'white' : 'black');
+         wsSend({ type: 'room_message', room: roomName, content: `__BOT__:${c}` });
+      }
+    }
+    return;
+  }
+  
+  if (content === '__CHESS_RESET__') {
+    if (window.chessBoards && window.chessBoards[roomName]) window.chessBoards[roomName].reset();
+    return;
+  }
+  
+  if (content.startsWith('__BOT__:')) {
+    from = 'cim-bot';
+    content = content.replace('__BOT__:', '');
+    is_bot = true;
+  }
+
   const container = document.getElementById(`room-msgs-${roomName}`);
   if (!container) return;
   const isSystem = from === '—';
@@ -1020,8 +1079,12 @@ function appendRoomMessage(roomName, from, content, timestamp) {
     const top = document.createElement('div');
     top.className = 'msg-top';
     const b = buddies[from] || {};
-    const botHtml = b.is_bot ? '<span class="bot-badge">BOT</span>' : '';
-    top.innerHTML = `<span class="msg-sender">${from}</span>${botHtml}<span class="msg-time">${formatTime(timestamp)}</span>`;
+    const actuallyBot = is_bot || b.is_bot;
+    const botHtml = actuallyBot ? '<span class="bot-badge">BOT</span>' : '';
+    top.innerHTML = `<div style="display:flex;align-items:center;">
+                       <span class="msg-sender">${from}</span>${botHtml}
+                     </div>
+                     <span class="msg-time">${formatTime(timestamp)}</span>`;
     div.appendChild(top);
     const text = document.createElement('div');
     text.className = 'msg-text';
@@ -1289,7 +1352,22 @@ el('smenu-rooms').addEventListener('click',      () => smenu(() => openRoomsList
 el('smenu-away').addEventListener('click',       () => smenu(() => { el('away-dialog').style.cssText += ';display:block;top:80px;left:220px'; focusWindow(el('away-dialog')); }));
 el('smenu-add-buddy').addEventListener('click',  () => smenu(() => { el('add-buddy-dialog').style.cssText += ';display:block;top:80px;left:220px'; el('add-buddy-msg').textContent = ''; el('add-buddy-input').value = ''; focusWindow(el('add-buddy-dialog')); }));
 el('smenu-about').addEventListener('click',      () => smenu(() => openAbout()));
+el('smenu-solitaire').addEventListener('click',  () => smenu(() => {
+  const win = el('solitaire-window');
+  if (win.style.display === 'none' || (!win.style.top && !win.style.left)) {
+    const pos = placeWindowCascade();
+    win.style.top = pos.top + 'px'; win.style.left = pos.left + 'px';
+  }
+  win.style.display = 'block'; focusWindow(win);
+  const iframe = el('solitaire-iframe');
+  if (iframe.src === 'about:blank' || iframe.src === window.location.href) {
+    iframe.src = 'https://www.google.com/logos/fnbx/solitaire/standalone.html';
+  }
+}));
 el('smenu-signoff').addEventListener('click',    () => smenu(() => doSignoff()));
+
+makeDraggable(el('solitaire-window'), el('solitaire-titlebar'));
+el('btn-close-solitaire').addEventListener('click', () => { el('solitaire-window').style.display = 'none'; });
 
 // ── Admin Panel ────────────────────────────────────────────────────────────
 el('smenu-admin').addEventListener('click', () => smenu(() => {
@@ -2030,6 +2108,95 @@ function gameOver(win) {
       }
     }
   }
+}
+
+// ── Chess ──────────────────────────────────────────────────────────────────
+function inviteToChess(username) {
+  const names = [myUsername, username].sort();
+  const roomName = `chess-${names[0]}-${names[1]}`;
+  
+  apiPost('/rooms', { name: roomName, topic: 'Chess Match', buddies_only: false, invite_only: true }, true)
+    .catch(e => { /* Ignore if exists */ })
+    .finally(() => {
+      apiPost(`/rooms/${roomName}/invite/${username}`, {}, true).catch(e => { /* Ignore duplicate */ });
+      openRoomWindow(roomName);
+    });
+}
+
+function initChessBoard(roomName) {
+  const boardEl = document.getElementById(`chess-board-${roomName}`);
+  const initialBoard = [
+    ['♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜'],
+    ['♟', '♟', '♟', '♟', '♟', '♟', '♟', '♟'],
+    ['', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', ''],
+    ['♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙'],
+    ['♖', '♘', '♗', '♕', '♔', '♗', '♘', '♖']
+  ];
+  let boardState = JSON.parse(JSON.stringify(initialBoard));
+  let selectedSquare = null;
+
+  function renderBoard() {
+    boardEl.innerHTML = '';
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const sq = document.createElement('div');
+        const isDark = (r + c) % 2 === 1;
+        sq.style.backgroundColor = isDark ? '#808080' : '#dfdfdf';
+        sq.style.display = 'flex';
+        sq.style.alignItems = 'center';
+        sq.style.justifyContent = 'center';
+        sq.style.fontSize = '24px';
+        sq.style.cursor = 'pointer';
+        sq.style.userSelect = 'none';
+        
+        if (selectedSquare && selectedSquare.r === r && selectedSquare.c === c) {
+          sq.style.backgroundColor = '#ffffc0';
+        }
+        
+        sq.textContent = boardState[r][c];
+        
+        sq.addEventListener('mousedown', () => {
+          if (selectedSquare) {
+            if (selectedSquare.r !== r || selectedSquare.c !== c) {
+               const moveMsg = `__CHESS_MOVE__:${selectedSquare.r},${selectedSquare.c}->${r},${c}`;
+               wsSend({ type: 'room_message', room: roomName, content: moveMsg });
+            }
+            selectedSquare = null;
+            renderBoard();
+          } else {
+            if (boardState[r][c]) {
+              selectedSquare = {r, c};
+              renderBoard();
+            }
+          }
+        });
+        
+        boardEl.appendChild(sq);
+      }
+    }
+  }
+  
+  renderBoard();
+  
+  if (!window.chessBoards) window.chessBoards = {};
+  window.chessBoards[roomName] = {
+    move: (r1, c1, r2, c2) => {
+      boardState[r2][c2] = boardState[r1][c1];
+      boardState[r1][c1] = '';
+      renderBoard();
+    },
+    reset: () => {
+      boardState = JSON.parse(JSON.stringify(initialBoard));
+      renderBoard();
+    }
+  };
+
+  document.getElementById(`chess-reset-${roomName}`).addEventListener('click', () => {
+    wsSend({ type: 'room_message', room: roomName, content: '__CHESS_RESET__' });
+  });
 }
 
 
