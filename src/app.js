@@ -971,7 +971,7 @@ function openRoomWindow(roomName) {
             <span>Play Chess</span>
             <button class="cim-btn" id="chess-reset-${roomName}" style="padding:0 4px">Reset</button>
           </div>
-          <div id="chess-board-${roomName}" style="width:240px; height:240px; display:grid; grid-template-columns:repeat(8, 1fr); border:2px inset #fff; background:#fff"></div>
+          <div id="chess-board-${roomName}" style="width:384px; height:384px; display:grid; grid-template-columns:repeat(8, 1fr); border:2px inset #fff; background:#fff"></div>
           <div id="chess-status-${roomName}" style="font-family:Arial;font-size:11px;text-align:center;margin-top:4px;color:#000080;">White to move</div>
         </div>
       ` : ''}
@@ -2155,7 +2155,7 @@ function initChessBoard(roomName) {
     return `${CHESS_PATH}${typeMap[type]}_${colorName}.png`;
   }
 
-  const CELL = 36; // px per square — 8×36 = 288px board
+  const CELL = 48; // px per square — 8×48 = 384px board, gives icons ~44px to shine
   boardEl.style.width = `${CELL * 8}px`;
   boardEl.style.height = `${CELL * 8}px`;
   boardEl.style.display = 'grid';
@@ -2167,12 +2167,16 @@ function initChessBoard(roomName) {
   // Also widen the chess container to fit
   const container = boardEl.closest('.chess-container');
   if (container) {
-    container.style.width = `${CELL * 8 + 20}px`;
+    container.style.width = `${CELL * 8 + 16}px`;
   }
+
+  // Size the room layout area to fit the board + label + controls
+  const layout = boardEl.closest('.room-layout');
+  if (layout) layout.style.height = `${CELL * 8 + 52}px`;
 
   // Widen the whole room window
   const winEl = boardEl.closest('.room-window');
-  if (winEl) winEl.style.width = '720px';
+  if (winEl) winEl.style.width = `${CELL * 8 + 16 + 320}px`;
 
   let selectedSquare = null;
 
@@ -2209,7 +2213,7 @@ function initChessBoard(roomName) {
         if (piece) {
           const img = document.createElement('img');
           img.src = pieceImg(piece.type, piece.color);
-          img.style.cssText = `width:${CELL - 4}px; height:${CELL - 4}px; image-rendering:pixelated; pointer-events:none;`;
+          img.style.cssText = `width:${CELL - 2}px; height:${CELL - 2}px; image-rendering:pixelated; pointer-events:none;`;
           sq.appendChild(img);
         } else if (legalTargets.has(squareName)) {
           const dot = document.createElement('div');
@@ -2267,5 +2271,3 @@ function initChessBoard(roomName) {
     wsSend({ type: 'room_message', room: roomName, content: '__CHESS_RESET__' });
   });
 }
-
-
