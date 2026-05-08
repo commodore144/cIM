@@ -495,8 +495,8 @@ function handleWSMessage(msg) {
     case 'dm_echo':           appendDMMessage(msg.to, 'self', myUsername, msg.content); break;
     case 'typing':            showTyping(msg.from); break;
     case 'presence':          handlePresence(msg.user, msg.status, msg.away_message, msg.emoji, msg.status_type); break;
-    case 'room_message':
-    case 'room_message_echo': appendRoomMessage(msg.room, msg.from, msg.content, msg.timestamp || new Date().toISOString(), msg.is_bot); break;
+    case 'room_message':      appendRoomMessage(msg.room, msg.from, msg.content, msg.timestamp || new Date().toISOString(), msg.is_bot); break;
+    case 'room_message_echo': appendRoomMessage(msg.room, msg.from, msg.content, msg.timestamp || new Date().toISOString(), msg.is_bot, true); break;
     case 'room_joined':       onRoomJoined(msg.room, msg.members); break;
     case 'room_event':        handleRoomEvent(msg); break;
     case 'buddy_request':     handleIncomingRequest(msg.from); break;
@@ -972,6 +972,7 @@ function openRoomWindow(roomName) {
             <button class="cim-btn" id="chess-reset-${roomName}" style="padding:0 4px">Reset</button>
           </div>
           <div id="chess-board-${roomName}" style="width:240px; height:240px; display:grid; grid-template-columns:repeat(8, 1fr); border:2px inset #fff; background:#fff"></div>
+          <div id="chess-status-${roomName}" style="font-family:Arial;font-size:11px;text-align:center;margin-top:4px;color:#000080;">White to move</div>
         </div>
       ` : ''}
       <div class="room-messages" id="room-msgs-${roomName}"></div>
@@ -1031,19 +1032,20 @@ function sendRoomMsg(roomName) {
   wsSend({ type: 'room_message', room: roomName, content });
 }
 
-function appendRoomMessage(roomName, from, content, timestamp, is_bot = false) {
+function appendRoomMessage(roomName, from, content, timestamp, is_bot = false, isEcho = false) {
   if (content.startsWith('__CHESS_MOVE__:')) {
-    const moveObj = JSON.parse(content.replace('__CHESS_MOVE__:', ''));
-    if (window.chessGames && window.chessGames[roomName]) {
+    // Skip applying the move for the echo of our own move — we already applied it locally
+    if (!isEcho && window.chessGames && window.chessGames[roomName]) {
+      const moveObj = JSON.parse(content.replace('__CHESS_MOVE__:', ''));
       const chess = window.chessGames[roomName].chess;
       chess.move(moveObj);
       window.chessGames[roomName].render();
       
-      if (from === myUsername && Math.random() < 0.4) {
+      // Bot commentary fires for the opponent's moves (from !== myUsername)
+      if (from !== myUsername && Math.random() < 0.4) {
          const comments = [
            "omg {color} can not play chess",
            "magnus carlsen is shaking right now",
-           "-# insert bad move here",
            "blunder??",
            "i wouldn't have done that...",
            "chat, is this real?",
@@ -1056,7 +1058,7 @@ function appendRoomMessage(roomName, from, content, timestamp, is_bot = false) {
          wsSend({ type: 'room_message', room: roomName, content: `__BOT__:${c}` });
       }
       
-      if (from === myUsername && chess.game_over()) {
+      if (chess.game_over()) {
          let res = "Game over!";
          if (chess.in_checkmate()) res = "Checkmate!";
          else if (chess.in_stalemate()) res = "Stalemate!";
@@ -1068,7 +1070,7 @@ function appendRoomMessage(roomName, from, content, timestamp, is_bot = false) {
   }
   
   if (content === '__CHESS_RESET__') {
-    if (window.chessGames && window.chessGames[roomName]) {
+    if (!isEcho && window.chessGames && window.chessGames[roomName]) {
       window.chessGames[roomName].chess.reset();
       window.chessGames[roomName].render();
     }
@@ -2161,6 +2163,12 @@ function initChessBoard(roomName) {
     const boardState = chess.board();
     const isFlipped = myColor === 'b';
 
+    // Compute legal move targets for selected square
+    let legalTargets = new Set();
+    if (selectedSquare) {
+      chess.moves({ square: selectedSquare, verbose: true }).forEach(m => legalTargets.add(m.to));
+    }
+
     for (let r = 0; r < 8; r++) {
       for (let c = 0; c < 8; c++) {
         const sq = document.createElement('div');
@@ -2168,21 +2176,36 @@ function initChessBoard(roomName) {
         const visualC = isFlipped ? 7 - c : c;
         
         const isDark = (visualR + visualC) % 2 === 1;
-        sq.style.backgroundColor = isDark ? '#808080' : '#dfdfdf';
-        sq.style.display = 'flex';
-        sq.style.alignItems = 'center';
-        sq.style.justifyContent = 'center';
-        sq.style.fontSize = '32px';
-        sq.style.cursor = 'pointer';
-        sq.style.userSelect = 'none';
-
-        const piece = boardState[visualR][visualC];
-        if (piece) sq.textContent = pieceMap[piece.type][piece.color];
-        
+        let bgColor = isDark ? '#769656' : '#eeeed2';
         const squareName = String.fromCharCode(97 + visualC) + (8 - visualR);
 
         if (selectedSquare === squareName) {
-          sq.style.backgroundColor = '#ffffc0';
+          bgColor = '#f6f669';
+        } else if (legalTargets.has(squareName)) {
+          bgColor = isDark ? '#b3c56a' : '#cdd45e';
+        }
+
+        sq.style.backgroundColor = bgColor;
+        sq.style.display = 'flex';
+        sq.style.alignItems = 'center';
+        sq.style.justifyContent = 'center';
+        sq.style.fontSize = '22px';
+        sq.style.cursor = 'pointer';
+        sq.style.userSelect = 'none';
+        sq.style.position = 'relative';
+
+        const piece = boardState[visualR][visualC];
+        if (piece) {
+          const span = document.createElement('span');
+          span.textContent = pieceMap[piece.type][piece.color];
+          sq.appendChild(span);
+        }
+
+        // Dot indicator for legal move targets with no piece
+        if (legalTargets.has(squareName) && !piece) {
+          const dot = document.createElement('div');
+          dot.style.cssText = 'width:8px;height:8px;border-radius:50%;background:rgba(0,0,0,0.25);position:absolute;pointer-events:none';
+          sq.appendChild(dot);
         }
 
         sq.addEventListener('mousedown', () => {
@@ -2194,6 +2217,9 @@ function initChessBoard(roomName) {
               const move = moves.find(m => m.to === squareName);
               if (move) {
                  const promotion = move.flags.includes('p') ? 'q' : undefined;
+                 // Apply move locally immediately for instant feedback
+                 chess.move({ from: selectedSquare, to: squareName, promotion });
+                 // Send to server so opponent sees it (server will echo back with isEcho=true, which we skip)
                  const moveMsg = `__CHESS_MOVE__:${JSON.stringify({ from: selectedSquare, to: squareName, promotion })}`;
                  wsSend({ type: 'room_message', room: roomName, content: moveMsg });
               }
@@ -2209,6 +2235,21 @@ function initChessBoard(roomName) {
         });
         
         boardEl.appendChild(sq);
+      }
+    }
+    // Update status line
+    const statusEl = document.getElementById(`chess-status-${roomName}`);
+    if (statusEl) {
+      if (chess.game_over()) {
+        if (chess.in_checkmate()) statusEl.textContent = `Checkmate! ${chess.turn() === 'w' ? 'Black' : 'White'} wins!`;
+        else if (chess.in_stalemate()) statusEl.textContent = 'Stalemate — draw!';
+        else if (chess.in_draw()) statusEl.textContent = 'Draw!';
+        statusEl.style.color = '#800000';
+      } else {
+        const turn = chess.turn() === 'w' ? 'White' : 'Black';
+        const inCheck = chess.in_check();
+        statusEl.textContent = inCheck ? `${turn} to move — CHECK!` : `${turn} to move`;
+        statusEl.style.color = inCheck ? '#cc0000' : '#000080';
       }
     }
   }
