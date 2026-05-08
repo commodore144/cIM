@@ -1,46 +1,46 @@
 // cIM — commodore. Instant Messenger
 
-const API        = 'https://inspire.tail0e8d21.ts.net/cim';
+const API = 'https://inspire.tail0e8d21.ts.net/cim';
 const EMOJI_PATH = 'src/emojis/';
 
 // ── State ──────────────────────────────────────────────────────────────────
-let token        = localStorage.getItem('cim_token')    || null;
-let myUsername   = localStorage.getItem('cim_username') || null;
-let ws           = null;
+let token = localStorage.getItem('cim_token') || null;
+let myUsername = localStorage.getItem('cim_username') || null;
+let ws = null;
 let wsReconnectTimer = null;
-let commMode     = 'ws';
-let pollTimer    = null;
-let buddies      = {};           // username -> {online, status, away_message, emoji, status_type}
+let commMode = 'ws';
+let pollTimer = null;
+let buddies = {};           // username -> {online, status, away_message, emoji, status_type}
 let pendingRequests = [];        // [{from, at}]
-let openChats    = {};           // username -> {winEl, unread}
-let openRooms    = {};           // room -> {winEl}
-let zCounter     = 10;
+let openChats = {};           // username -> {winEl, unread}
+let openRooms = {};           // room -> {winEl}
+let zCounter = 10;
 let soundEnabled = localStorage.getItem('cim_sound') !== 'off';
-let totalUnread  = 0;
+let totalUnread = 0;
 let activeEmojiPicker = null;
-let isAdmin      = false;
-let roomInvites  = [];
+let isAdmin = false;
+let roomInvites = [];
 // Own status tracking (can't use buddies[myUsername] - not in own list)
-let myStatusType  = 'os';   // 'os' or 'as'
-let myStatusMsg   = '';
+let myStatusType = 'os';   // 'os' or 'as'
+let myStatusMsg = '';
 let myStatusEmoji = '';
 // Idle detection
-let idleTimer     = null;
-let isIdle        = false;   // currently in AS-idle?
-let idleStarted   = false;   // only run after login
+let idleTimer = null;
+let isIdle = false;   // currently in AS-idle?
+let idleStarted = false;   // only run after login
 let lastActivityAt = 0;
-const IDLE_TIMEOUT  = 10 * 60 * 1000; // 10 minutes
+const IDLE_TIMEOUT = 10 * 60 * 1000; // 10 minutes
 
 // ── Emoji state ────────────────────────────────────────────────────────────
-let EMOJIS    = [];
+let EMOJIS = [];
 let EMOJI_SET = new Set();
 let recentEmojis = JSON.parse(localStorage.getItem('cim_recent_emojis') || '[]');
 
 async function loadEmojis() {
   try {
-    const res  = await fetch(`${API}/eref`);
+    const res = await fetch(`${API}/eref`);
     const data = await res.json();
-    EMOJIS    = data.emojis;
+    EMOJIS = data.emojis;
     EMOJI_SET = new Set(EMOJIS);
   } catch (e) { console.warn('Could not load emojis from /eref:', e); }
 }
@@ -63,10 +63,10 @@ function playTone(freq, duration, type = 'sine', vol = 0.15) {
   } catch { }
 }
 
-function playDoorSound()     { playTone(800, 0.08, 'square', 0.1); setTimeout(() => playTone(400, 0.12, 'square', 0.1), 80); }
-function playMsgSound()      { playTone(880, 0.06, 'sine', 0.12);  setTimeout(() => playTone(1100, 0.08, 'sine', 0.12), 60); }
-function playBuddyOnSound()  { playTone(880, 0.08, 'sine', 0.1); setTimeout(() => playTone(1100, 0.06, 'sine', 0.1), 90); setTimeout(() => playTone(1320, 0.1, 'sine', 0.1), 170); }
-function playRequestSound()  { playTone(660, 0.1, 'sine', 0.12); setTimeout(() => playTone(880, 0.15, 'sine', 0.12), 120); }
+function playDoorSound() { playTone(800, 0.08, 'square', 0.1); setTimeout(() => playTone(400, 0.12, 'square', 0.1), 80); }
+function playMsgSound() { playTone(880, 0.06, 'sine', 0.12); setTimeout(() => playTone(1100, 0.08, 'sine', 0.12), 60); }
+function playBuddyOnSound() { playTone(880, 0.08, 'sine', 0.1); setTimeout(() => playTone(1100, 0.06, 'sine', 0.1), 90); setTimeout(() => playTone(1320, 0.1, 'sine', 0.1), 170); }
+function playRequestSound() { playTone(660, 0.1, 'sine', 0.12); setTimeout(() => playTone(880, 0.15, 'sine', 0.12), 120); }
 
 // ── Utilities ──────────────────────────────────────────────────────────────
 function el(id) { return document.getElementById(id); }
@@ -187,7 +187,7 @@ function createEmojiPicker(inputEl) {
   const tabs = document.createElement('div');
   tabs.className = 'emoji-tabs';
   const tabRecent = document.createElement('button'); tabRecent.className = 'emoji-tab active'; tabRecent.textContent = 'Recent';
-  const tabAll    = document.createElement('button'); tabAll.className    = 'emoji-tab';        tabAll.textContent    = `All (${EMOJIS.length})`;
+  const tabAll = document.createElement('button'); tabAll.className = 'emoji-tab'; tabAll.textContent = `All (${EMOJIS.length})`;
   tabs.appendChild(tabRecent); tabs.appendChild(tabAll);
   picker.appendChild(tabs);
 
@@ -223,7 +223,7 @@ function createEmojiPicker(inputEl) {
   }
 
   tabRecent.addEventListener('mousedown', e => { e.preventDefault(); currentTab = 'recent'; tabRecent.classList.add('active'); tabAll.classList.remove('active'); renderGrid(search.value); });
-  tabAll.addEventListener('mousedown',    e => { e.preventDefault(); currentTab = 'all';    tabAll.classList.add('active'); tabRecent.classList.remove('active'); renderGrid(search.value); });
+  tabAll.addEventListener('mousedown', e => { e.preventDefault(); currentTab = 'all'; tabAll.classList.add('active'); tabRecent.classList.remove('active'); renderGrid(search.value); });
   search.addEventListener('input', () => renderGrid(search.value));
   renderGrid();
 
@@ -245,14 +245,14 @@ function createEmojiPicker(inputEl) {
 async function apiPost(path, body, auth = false) {
   const headers = { 'Content-Type': 'application/json' };
   if (auth && token) headers['Authorization'] = `Bearer ${token}`;
-  const res  = await fetch(API + path, { method: 'POST', headers, body: JSON.stringify(body) });
+  const res = await fetch(API + path, { method: 'POST', headers, body: JSON.stringify(body) });
   const data = await res.json();
   if (!res.ok) throw new Error(data.detail || 'Request failed');
   return data;
 }
 
 async function apiGet(path) {
-  const res  = await fetch(API + path, { headers: { 'Authorization': `Bearer ${token}` } });
+  const res = await fetch(API + path, { headers: { 'Authorization': `Bearer ${token}` } });
   const data = await res.json();
   if (!res.ok) throw new Error(data.detail || 'Request failed');
   return data;
@@ -273,7 +273,7 @@ function makeDraggable(winEl, handleEl) {
   document.addEventListener('mousemove', e => {
     if (!dragging) return;
     winEl.style.left = Math.max(0, Math.min(e.clientX - ox, window.innerWidth - winEl.offsetWidth)) + 'px';
-    winEl.style.top  = Math.max(0, Math.min(e.clientY - oy, window.innerHeight - 28 - winEl.offsetHeight)) + 'px';
+    winEl.style.top = Math.max(0, Math.min(e.clientY - oy, window.innerHeight - 28 - winEl.offsetHeight)) + 'px';
   });
   document.addEventListener('mouseup', () => { dragging = false; });
   winEl.addEventListener('mousedown', () => focusWindow(winEl));
@@ -404,12 +404,12 @@ function enterDesktop() {
   el('start-menu-username').textContent = myUsername;
 
   makeDraggable(el('buddy-list-window'), el('buddy-titlebar'));
-  makeDraggable(el('away-dialog'),       el('away-titlebar'));
+  makeDraggable(el('away-dialog'), el('away-titlebar'));
   makeDraggable(el('add-buddy-dialog'), el('add-buddy-titlebar'));
-  makeDraggable(el('rooms-window'),     el('rooms-titlebar'));
-  makeDraggable(el('about-dialog'),     el('about-titlebar'));
-  makeDraggable(el('admin-window'),     el('admin-titlebar'));
-  makeDraggable(el('invite-dialog'),    el('invite-titlebar'));
+  makeDraggable(el('rooms-window'), el('rooms-titlebar'));
+  makeDraggable(el('about-dialog'), el('about-titlebar'));
+  makeDraggable(el('admin-window'), el('admin-titlebar'));
+  makeDraggable(el('invite-dialog'), el('invite-titlebar'));
 
   updateSoundBtn(); updateTitle(); loadEmojis();
   focusWindow(el('buddy-list-window'));
@@ -425,10 +425,10 @@ function connectWS() {
   if (ws) ws.close();
   const wsUrl = API.replace('https://', 'wss://').replace('http://', 'ws://');
   ws = new WebSocket(`${wsUrl}/ws?token=${token}`);
-  ws.onopen    = () => { el('disconnect-banner').classList.remove('visible'); if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; } };
+  ws.onopen = () => { el('disconnect-banner').classList.remove('visible'); if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; } };
   ws.onmessage = e => { try { handleWSMessage(JSON.parse(e.data)); } catch (err) { console.error(err); } };
-  ws.onclose   = () => { if (commMode !== 'ws') return; el('disconnect-banner').classList.add('visible'); wsReconnectTimer = setTimeout(connectWS, 3000); };
-  ws.onerror   = () => { if (ws) ws.close(); setCommMode('rest'); };
+  ws.onclose = () => { if (commMode !== 'ws') return; el('disconnect-banner').classList.add('visible'); wsReconnectTimer = setTimeout(connectWS, 3000); };
+  ws.onerror = () => { if (ws) ws.close(); setCommMode('rest'); };
 }
 
 async function startRESTPolling() {
@@ -454,11 +454,11 @@ function wsSend(msg) {
 
 async function handleRestSend(msg) {
   try {
-    if      (msg.type === 'dm')           { await apiPost('/poll/dm', { to: msg.to, content: msg.content }, true); appendDMMessage(msg.to, 'self', myUsername, msg.content); }
+    if (msg.type === 'dm') { await apiPost('/poll/dm', { to: msg.to, content: msg.content }, true); appendDMMessage(msg.to, 'self', myUsername, msg.content); }
     else if (msg.type === 'room_message') await apiPost('/poll/room/message', { room: msg.room, content: msg.content }, true);
-    else if (msg.type === 'join_room')    handleWSMessage(await apiPost('/poll/room/join',  { room: msg.room }, true));
-    else if (msg.type === 'leave_room')   await apiPost('/poll/room/leave', { room: msg.room }, true);
-    else if (msg.type === 'typing')       await apiPost('/poll/typing', { to: msg.to }, true);
+    else if (msg.type === 'join_room') handleWSMessage(await apiPost('/poll/room/join', { room: msg.room }, true));
+    else if (msg.type === 'leave_room') await apiPost('/poll/room/leave', { room: msg.room }, true);
+    else if (msg.type === 'typing') await apiPost('/poll/typing', { to: msg.to }, true);
   } catch (e) { console.error('Rest send failed', e); }
 }
 
@@ -468,9 +468,9 @@ function handleWSMessage(msg) {
     case 'init':
       el('self-name').textContent = msg.username;
       // Restore own status from server
-      myStatusMsg   = msg.away_message || '';
+      myStatusMsg = msg.away_message || '';
       myStatusEmoji = msg.emoji || '';
-      myStatusType  = msg.status_type || 'os';
+      myStatusType = msg.status_type || 'os';
       if (myStatusMsg || myStatusEmoji) {
         const dotClass = (myStatusType === 'as' && myStatusMsg) ? 'away' : 'online';
         el('self-status-dot').className = 'status-dot ' + dotClass;
@@ -491,17 +491,17 @@ function handleWSMessage(msg) {
       }
       renderBuddyList();
       break;
-    case 'dm':                receiveDM(msg.from, msg.content, msg.is_bot); break;
-    case 'dm_echo':           appendDMMessage(msg.to, 'self', myUsername, msg.content); break;
-    case 'typing':            showTyping(msg.from); break;
-    case 'presence':          handlePresence(msg.user, msg.status, msg.away_message, msg.emoji, msg.status_type); break;
-    case 'room_message':      appendRoomMessage(msg.room, msg.from, msg.content, msg.timestamp || new Date().toISOString(), msg.is_bot); break;
+    case 'dm': receiveDM(msg.from, msg.content, msg.is_bot); break;
+    case 'dm_echo': appendDMMessage(msg.to, 'self', myUsername, msg.content); break;
+    case 'typing': showTyping(msg.from); break;
+    case 'presence': handlePresence(msg.user, msg.status, msg.away_message, msg.emoji, msg.status_type); break;
+    case 'room_message': appendRoomMessage(msg.room, msg.from, msg.content, msg.timestamp || new Date().toISOString(), msg.is_bot); break;
     case 'room_message_echo': appendRoomMessage(msg.room, msg.from, msg.content, msg.timestamp || new Date().toISOString(), msg.is_bot, true); break;
-    case 'room_joined':       onRoomJoined(msg.room, msg.members); break;
-    case 'room_event':        handleRoomEvent(msg); break;
-    case 'buddy_request':     handleIncomingRequest(msg.from); break;
-    case 'buddy_accepted':    handleBuddyAccepted(msg); break;
-    case 'buddy_removed':     handleBuddyRemoved(msg.username); break;
+    case 'room_joined': onRoomJoined(msg.room, msg.members); break;
+    case 'room_event': handleRoomEvent(msg); break;
+    case 'buddy_request': handleIncomingRequest(msg.from); break;
+    case 'buddy_accepted': handleBuddyAccepted(msg); break;
+    case 'buddy_removed': handleBuddyRemoved(msg.username); break;
     case 'room_invite_received':
       playRequestSound();
       sendNotif(`cIM`, `${msg.from} invited you to #${msg.room}`);
@@ -513,9 +513,9 @@ function handleWSMessage(msg) {
     case 'room_error':
       showToast(msg.error);
       if (openRooms[msg.room]) {
-          openRooms[msg.room].winEl.style.display = 'none';
-          delete openRooms[msg.room];
-          updateTaskbar();
+        openRooms[msg.room].winEl.style.display = 'none';
+        delete openRooms[msg.room];
+        updateTaskbar();
       }
       break;
   }
@@ -604,9 +604,9 @@ async function declineRoomInvite(roomName) {
 
 // ── Buddy List ─────────────────────────────────────────────────────────────
 function renderBuddyList() {
-  const body    = el('buddy-list-body');
-  const online  = Object.values(buddies).filter(b => b.online && b.status !== 'away');
-  const away    = Object.values(buddies).filter(b => b.online && b.status === 'away');
+  const body = el('buddy-list-body');
+  const online = Object.values(buddies).filter(b => b.online && b.status !== 'away');
+  const away = Object.values(buddies).filter(b => b.online && b.status === 'away');
   const offline = Object.values(buddies).filter(b => !b.online);
 
   body.innerHTML = '';
@@ -631,7 +631,7 @@ function renderBuddyList() {
           <button class="req-btn decline" title="Decline">✕</button>
         </div>
       `;
-      row.querySelector('.accept').addEventListener('click',  () => acceptRequest(req.from));
+      row.querySelector('.accept').addEventListener('click', () => acceptRequest(req.from));
       row.querySelector('.decline').addEventListener('click', () => declineRequest(req.from));
       section.appendChild(row);
     });
@@ -670,9 +670,9 @@ function renderBuddyList() {
     return;
   }
 
-  if (online.length)  renderBuddyGroup(body, `Online (${online.length})`,  online,  'online');
-  if (away.length)    renderBuddyGroup(body, `Away (${away.length})`,      away,    'away');
-  if (offline.length) renderBuddyGroup(body, `Offline (${offline.length})`,offline, 'offline');
+  if (online.length) renderBuddyGroup(body, `Online (${online.length})`, online, 'online');
+  if (away.length) renderBuddyGroup(body, `Away (${away.length})`, away, 'away');
+  if (offline.length) renderBuddyGroup(body, `Offline (${offline.length})`, offline, 'offline');
 
   updateTaskbar();
 }
@@ -749,8 +749,8 @@ function showBuddyContextMenu(x, y, username) {
   });
 
   document.body.appendChild(menu);
-  if (x + menu.offsetWidth  > window.innerWidth)  menu.style.left = (x - menu.offsetWidth)  + 'px';
-  if (y + menu.offsetHeight > window.innerHeight) menu.style.top  = (y - menu.offsetHeight) + 'px';
+  if (x + menu.offsetWidth > window.innerWidth) menu.style.left = (x - menu.offsetWidth) + 'px';
+  if (y + menu.offsetHeight > window.innerHeight) menu.style.top = (y - menu.offsetHeight) + 'px';
 
   setTimeout(() => {
     function close(e) { if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('mousedown', close); } }
@@ -811,7 +811,7 @@ function openDMWindow(username) {
   if (openChats[username]) { openChats[username].winEl.style.display = 'block'; focusWindow(openChats[username].winEl); return; }
 
   const buddy = buddies[username] || { status: 'offline', away_message: '' };
-  const pos   = placeWindowCascade();
+  const pos = placeWindowCascade();
   const winEl = document.createElement('div');
   winEl.className = 'cim-window chat-window';
   winEl.style.top = pos.top + 'px'; winEl.style.left = pos.left + 'px';
@@ -847,7 +847,7 @@ function openDMWindow(username) {
   inputEl.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendDM(username); } });
 
   let typingTimer = null;
-  inputEl.addEventListener('input', () => { wsSend({ type: 'typing', to: username }); clearTimeout(typingTimer); typingTimer = setTimeout(() => {}, 2000); });
+  inputEl.addEventListener('input', () => { wsSend({ type: 'typing', to: username }); clearTimeout(typingTimer); typingTimer = setTimeout(() => { }, 2000); });
   document.getElementById(`emoji-btn-dm-${username}`).addEventListener('click', e => { e.stopPropagation(); createEmojiPicker(inputEl); });
 
   // Scroll-to-bottom button
@@ -1011,9 +1011,9 @@ function openRoomWindow(roomName) {
 
   wsSend({ type: 'join_room', room: roomName });
   loadRoomHistory(roomName);
-  
+
   if (isChess) initChessBoard(roomName);
-  
+
   updateTaskbar();
 }
 
@@ -1040,35 +1040,35 @@ function appendRoomMessage(roomName, from, content, timestamp, is_bot = false, i
       const chess = window.chessGames[roomName].chess;
       chess.move(moveObj);
       window.chessGames[roomName].render();
-      
+
       // Bot commentary fires for the opponent's moves (from !== myUsername)
       if (from !== myUsername && Math.random() < 0.4) {
-         const comments = [
-           "omg {color} can not play chess",
-           "magnus carlsen is shaking right now",
-           "blunder??",
-           "i wouldn't have done that...",
-           "chat, is this real?",
-           "gg go next",
-           "bro is cooking absolutely nothing",
-           "my grandma plays better than this"
-         ];
-         let c = comments[Math.floor(Math.random() * comments.length)];
-         c = c.replace('{color}', chess.turn() === 'w' ? 'black' : 'white');
-         wsSend({ type: 'room_message', room: roomName, content: `__BOT__:${c}` });
+        const comments = [
+          "omg {color} can not play chess",
+          "magnus carlsen is shaking right now",
+          "blunder??",
+          "i wouldn't have done that...",
+          "chat, is this real?",
+          "gg go next",
+          "bro is cooking absolutely nothing",
+          "my grandma plays better than this"
+        ];
+        let c = comments[Math.floor(Math.random() * comments.length)];
+        c = c.replace('{color}', chess.turn() === 'w' ? 'black' : 'white');
+        wsSend({ type: 'room_message', room: roomName, content: `__BOT__:${c}` });
       }
-      
+
       if (chess.game_over()) {
-         let res = "Game over!";
-         if (chess.in_checkmate()) res = "Checkmate!";
-         else if (chess.in_stalemate()) res = "Stalemate!";
-         else if (chess.in_draw()) res = "Draw!";
-         wsSend({ type: 'room_message', room: roomName, content: `__BOT__:The game has ended! ${res}` });
+        let res = "Game over!";
+        if (chess.in_checkmate()) res = "Checkmate!";
+        else if (chess.in_stalemate()) res = "Stalemate!";
+        else if (chess.in_draw()) res = "Draw!";
+        wsSend({ type: 'room_message', room: roomName, content: `__BOT__:The game has ended! ${res}` });
       }
     }
     return;
   }
-  
+
   if (content === '__CHESS_RESET__') {
     if (!isEcho && window.chessGames && window.chessGames[roomName]) {
       window.chessGames[roomName].chess.reset();
@@ -1076,7 +1076,7 @@ function appendRoomMessage(roomName, from, content, timestamp, is_bot = false, i
     }
     return;
   }
-  
+
   if (content.startsWith('__BOT__:')) {
     from = 'cim-bot';
     content = content.replace('__BOT__:', '');
@@ -1208,9 +1208,9 @@ function createStatusEmojiPicker() {
 async function saveStatus(message, emoji = '', type = 'os') {
   try {
     await apiPost('/away', { message, emoji, status_type: type }, true);
-    myStatusMsg   = message;
+    myStatusMsg = message;
     myStatusEmoji = emoji;
-    myStatusType  = type;
+    myStatusType = type;
     const dotClass = (type === 'as' && message) ? 'away' : 'online';
     el('self-status-dot').className = 'status-dot ' + dotClass;
     el('away-dialog').style.display = 'none';
@@ -1261,8 +1261,8 @@ function onActivity() {
 }
 
 document.addEventListener('mousemove', onActivity);
-document.addEventListener('keydown',   onActivity);
-document.addEventListener('click',     onActivity);
+document.addEventListener('keydown', onActivity);
+document.addEventListener('click', onActivity);
 // Note: startIdleDetection() is called from enterDesktop()
 
 // ── Add Buddy ──────────────────────────────────────────────────────────────
@@ -1363,11 +1363,11 @@ startMenu.addEventListener('click', e => e.stopPropagation());
 function smenu(fn) { startMenu.classList.remove('open'); fn(); }
 
 el('smenu-buddy-list').addEventListener('click', () => smenu(() => { el('buddy-list-window').style.display = 'block'; focusWindow(el('buddy-list-window')); }));
-el('smenu-rooms').addEventListener('click',      () => smenu(() => openRoomsList()));
-el('smenu-away').addEventListener('click',       () => smenu(() => { el('away-dialog').style.cssText += ';display:block;top:80px;left:220px'; focusWindow(el('away-dialog')); }));
-el('smenu-add-buddy').addEventListener('click',  () => smenu(() => { el('add-buddy-dialog').style.cssText += ';display:block;top:80px;left:220px'; el('add-buddy-msg').textContent = ''; el('add-buddy-input').value = ''; focusWindow(el('add-buddy-dialog')); }));
-el('smenu-about').addEventListener('click',      () => smenu(() => openAbout()));
-el('smenu-solitaire').addEventListener('click',  () => smenu(() => {
+el('smenu-rooms').addEventListener('click', () => smenu(() => openRoomsList()));
+el('smenu-away').addEventListener('click', () => smenu(() => { el('away-dialog').style.cssText += ';display:block;top:80px;left:220px'; focusWindow(el('away-dialog')); }));
+el('smenu-add-buddy').addEventListener('click', () => smenu(() => { el('add-buddy-dialog').style.cssText += ';display:block;top:80px;left:220px'; el('add-buddy-msg').textContent = ''; el('add-buddy-input').value = ''; focusWindow(el('add-buddy-dialog')); }));
+el('smenu-about').addEventListener('click', () => smenu(() => openAbout()));
+el('smenu-solitaire').addEventListener('click', () => smenu(() => {
   const win = el('solitaire-window');
   if (win.style.display === 'none' || (!win.style.top && !win.style.left)) {
     const pos = placeWindowCascade();
@@ -1379,7 +1379,7 @@ el('smenu-solitaire').addEventListener('click',  () => smenu(() => {
     iframe.src = 'https://www.google.com/logos/fnbx/solitaire/standalone.html';
   }
 }));
-el('smenu-signoff').addEventListener('click',    () => smenu(() => doSignoff()));
+el('smenu-signoff').addEventListener('click', () => smenu(() => doSignoff()));
 
 makeDraggable(el('solitaire-window'), el('solitaire-titlebar'));
 el('btn-close-solitaire').addEventListener('click', () => { el('solitaire-window').style.display = 'none'; });
@@ -1496,7 +1496,7 @@ function openAbout() {
   el('about-username').textContent = myUsername || '—';
   focusWindow(about);
 }
-el('btn-close-about').addEventListener('click',    () => { el('about-dialog').style.display = 'none'; });
+el('btn-close-about').addEventListener('click', () => { el('about-dialog').style.display = 'none'; });
 el('btn-close-about-ok').addEventListener('click', () => { el('about-dialog').style.display = 'none'; });
 
 // ── Background Customization ───────────────────────────────────────────────
@@ -1507,7 +1507,7 @@ function loadBackground() {
   const bgColor = localStorage.getItem('cim_bg_color');
   const bgImg = localStorage.getItem('cim_bg_image');
   const scaling = localStorage.getItem('cim_bg_scaling') || 'cover';
-  
+
   if (bgColor) desktopEl.style.backgroundColor = bgColor;
   if (bgImg && bgImg !== 'none') {
     desktopEl.style.backgroundImage = `url(${bgImg})`;
@@ -1543,12 +1543,12 @@ desktopEl.addEventListener('contextmenu', e => {
   if (e.target !== desktopEl) return;
   e.preventDefault();
   document.querySelectorAll('.desktop-menu').forEach(m => m.remove());
-  
+
   const menu = document.createElement('div');
   menu.className = 'desktop-menu';
-  menu.style.left = e.clientX + 'px'; 
+  menu.style.left = e.clientX + 'px';
   menu.style.top = e.clientY + 'px';
-  
+
   const optProps = document.createElement('div');
   optProps.className = 'desktop-menu-item';
   optProps.textContent = 'Display Properties...';
@@ -1577,7 +1577,7 @@ desktopEl.addEventListener('contextmenu', e => {
   menu.appendChild(optProps);
   menu.appendChild(sep);
   menu.appendChild(optMs);
-  
+
   document.body.appendChild(menu);
 
   setTimeout(() => {
@@ -1604,15 +1604,15 @@ function openDisplayProperties() {
   }
   dpWin.style.display = 'block';
   focusWindow(dpWin);
-  
+
   const savedColor = localStorage.getItem('cim_bg_color') || '#008080';
   const savedImage = localStorage.getItem('cim_bg_image') || 'none';
   const savedScaling = localStorage.getItem('cim_bg_scaling') || 'cover';
-  
+
   dpColor.value = savedColor;
   dpScaling.value = savedScaling;
   tempBgImage = savedImage;
-  
+
   updateDisplayPreview();
 }
 
@@ -1680,7 +1680,7 @@ const sdkDifficultyClues = { easy: 38, medium: 28, hard: 22 };
 
 // Sudoku generator
 function sdkGenerateSolution() {
-  const grid = Array.from({length: 9}, () => Array(9).fill(0));
+  const grid = Array.from({ length: 9 }, () => Array(9).fill(0));
   sdkFillGrid(grid);
   return grid;
 }
@@ -1689,7 +1689,7 @@ function sdkFillGrid(grid) {
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
       if (grid[r][c] === 0) {
-        const nums = [1,2,3,4,5,6,7,8,9].sort(() => Math.random() - 0.5);
+        const nums = [1, 2, 3, 4, 5, 6, 7, 8, 9].sort(() => Math.random() - 0.5);
         for (const n of nums) {
           if (sdkIsValid(grid, r, c, n)) {
             grid[r][c] = n;
@@ -1711,7 +1711,7 @@ function sdkIsValid(grid, row, col, num) {
   const br = Math.floor(row / 3) * 3, bc = Math.floor(col / 3) * 3;
   for (let dr = 0; dr < 3; dr++)
     for (let dc = 0; dc < 3; dc++)
-      if (grid[br+dr][bc+dc] === num) return false;
+      if (grid[br + dr][bc + dc] === num) return false;
   return true;
 }
 
@@ -1737,7 +1737,7 @@ function initSudoku() {
   const diff = document.getElementById('sdk-difficulty').value;
   const clues = sdkDifficultyClues[diff] || 28;
   sdkSolution = sdkGenerateSolution();
-  sdkPuzzle   = sdkMakePuzzle(sdkSolution, clues);
+  sdkPuzzle = sdkMakePuzzle(sdkSolution, clues);
   sdkUserGrid = sdkPuzzle.map(r => [...r]);
 
   renderSdkBoard();
@@ -1793,7 +1793,7 @@ function sdkHighlight(r, c) {
   document.querySelectorAll('.sdk-cell').forEach(cell => {
     const cr = parseInt(cell.dataset.r), cc = parseInt(cell.dataset.c);
     cell.classList.remove('selected', 'highlight');
-    const sameBox = Math.floor(cr/3)===Math.floor(r/3) && Math.floor(cc/3)===Math.floor(c/3);
+    const sameBox = Math.floor(cr / 3) === Math.floor(r / 3) && Math.floor(cc / 3) === Math.floor(c / 3);
     if (cr === r && cc === c) cell.classList.add('selected');
     else if (cr === r || cc === c || sameBox) cell.classList.add('highlight');
   });
@@ -1814,8 +1814,8 @@ function sdkEnterNumber(num) {
   if (sdkCheckComplete()) {
     sdkGameOver = true;
     clearInterval(sdkTimerInterval);
-    const mins = String(Math.floor(sdkElapsed/60)).padStart(2,'0');
-    const secs = String(sdkElapsed%60).padStart(2,'0');
+    const mins = String(Math.floor(sdkElapsed / 60)).padStart(2, '0');
+    const secs = String(sdkElapsed % 60).padStart(2, '0');
     showSdkBanner(`🎉 Solved in ${mins}:${secs}!`);
   }
 }
@@ -1837,7 +1837,7 @@ function sdkHint() {
   const empties = [];
   for (let r = 0; r < 9; r++)
     for (let c = 0; c < 9; c++)
-      if (sdkPuzzle[r][c] === 0 && sdkUserGrid[r][c] !== sdkSolution[r][c]) empties.push([r,c]);
+      if (sdkPuzzle[r][c] === 0 && sdkUserGrid[r][c] !== sdkSolution[r][c]) empties.push([r, c]);
   if (!empties.length) return;
   const [r, c] = empties[Math.floor(Math.random() * empties.length)];
   sdkSelected = { r, c };
@@ -1851,8 +1851,8 @@ function sdkHint() {
 }
 
 function updateSdkStatus() {
-  const mins = String(Math.floor(sdkElapsed/60)).padStart(2,'0');
-  const secs = String(sdkElapsed%60).padStart(2,'0');
+  const mins = String(Math.floor(sdkElapsed / 60)).padStart(2, '0');
+  const secs = String(sdkElapsed % 60).padStart(2, '0');
   document.getElementById('sdk-mistakes').textContent = `Mistakes: ${sdkMistakes}`;
   document.getElementById('sdk-timer-display').textContent = `${mins}:${secs}`;
 }
@@ -1896,10 +1896,10 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') sdkEnterNumber(0);
   if (sdkSelected) {
     const { r, c } = sdkSelected;
-    if (e.key === 'ArrowUp'    && r > 0) sdkSelectCell(r-1, c);
-    if (e.key === 'ArrowDown'  && r < 8) sdkSelectCell(r+1, c);
-    if (e.key === 'ArrowLeft'  && c > 0) sdkSelectCell(r, c-1);
-    if (e.key === 'ArrowRight' && c < 8) sdkSelectCell(r, c+1);
+    if (e.key === 'ArrowUp' && r > 0) sdkSelectCell(r - 1, c);
+    if (e.key === 'ArrowDown' && r < 8) sdkSelectCell(r + 1, c);
+    if (e.key === 'ArrowLeft' && c > 0) sdkSelectCell(r, c - 1);
+    if (e.key === 'ArrowRight' && c < 8) sdkSelectCell(r, c + 1);
   }
 }, true);
 
@@ -1912,7 +1912,7 @@ document.getElementById('smenu-minesweeper').addEventListener('click', () => {
   document.getElementById('start-menu').classList.remove('open');
   if (win.style.display === 'none') {
     win.style.display = 'block';
-    win.style.top  = '60px';
+    win.style.top = '60px';
     win.style.left = '320px';
     initMinesweeper();
   }
@@ -1924,7 +1924,7 @@ document.getElementById('smenu-sudoku').addEventListener('click', () => {
   document.getElementById('start-menu').classList.remove('open');
   if (win.style.display === 'none') {
     win.style.display = 'block';
-    win.style.top  = '60px';
+    win.style.top = '60px';
     win.style.left = '320px';
     makeDraggable(win, document.getElementById('sudoku-titlebar'));
     if (!sdkPuzzle.length) initSudoku();
@@ -1948,7 +1948,7 @@ diffSelect.addEventListener('change', () => {
   custW.style.display = isCustom ? 'inline-block' : 'none';
   custH.style.display = isCustom ? 'inline-block' : 'none';
   custM.style.display = isCustom ? 'inline-block' : 'none';
-  if(!isCustom) initMinesweeper();
+  if (!isCustom) initMinesweeper();
 });
 
 document.getElementById('btn-ms-new').addEventListener('click', initMinesweeper);
@@ -1967,18 +1967,18 @@ function initMinesweeper() {
   msFirstClick = true;
   document.getElementById('ms-timer').textContent = "000";
   document.getElementById('ms-face').textContent = "🙂";
-  
+
   const diff = diffSelect.value;
-  if(diff === 'beginner') { msW = 9; msH = 9; msMines = 10; }
-  else if(diff === 'intermediate') { msW = 16; msH = 16; msMines = 40; }
-  else if(diff === 'expert') { msW = 30; msH = 16; msMines = 99; }
+  if (diff === 'beginner') { msW = 9; msH = 9; msMines = 10; }
+  else if (diff === 'intermediate') { msW = 16; msH = 16; msMines = 40; }
+  else if (diff === 'expert') { msW = 30; msH = 16; msMines = 99; }
   else {
     msW = Math.max(5, Math.min(50, parseInt(custW.value) || 9));
     msH = Math.max(5, Math.min(50, parseInt(custH.value) || 9));
     msMines = Math.max(1, Math.min(msW * msH - 1, parseInt(custM.value) || 10));
     custW.value = msW; custH.value = msH; custM.value = msMines;
   }
-  
+
   msFlags = 0;
   msRevealed = 0;
   document.getElementById('ms-mines-count').textContent = formatMSCounter(msMines);
@@ -1987,22 +1987,22 @@ function initMinesweeper() {
   boardEl.style.gridTemplateColumns = `repeat(${msW}, 16px)`;
   boardEl.style.width = `${msW * 16 + 6}px`; // accounting for 3px inset borders
   boardEl.innerHTML = '';
-  
+
   msBoard = Array(msH).fill(null).map(() => Array(msW).fill(0));
-  
-  for(let y = 0; y < msH; y++) {
-    for(let x = 0; x < msW; x++) {
+
+  for (let y = 0; y < msH; y++) {
+    for (let x = 0; x < msW; x++) {
       const cell = document.createElement('div');
       cell.className = 'ms-cell';
       cell.dataset.x = x;
       cell.dataset.y = y;
-      
+
       cell.addEventListener('mousedown', (e) => {
-        if(msGameOver) return;
-        if(e.button === 2) { // right click
+        if (msGameOver) return;
+        if (e.button === 2) { // right click
           e.preventDefault();
-          if(cell.classList.contains('revealed')) return;
-          if(cell.textContent === '🚩') {
+          if (cell.classList.contains('revealed')) return;
+          if (cell.textContent === '🚩') {
             cell.textContent = '';
             msFlags--;
           } else {
@@ -2010,9 +2010,9 @@ function initMinesweeper() {
             msFlags++;
           }
           document.getElementById('ms-mines-count').textContent = formatMSCounter(msMines - msFlags);
-        } else if(e.button === 0) { // left click
-          if(cell.textContent === '🚩' || cell.classList.contains('revealed')) return;
-          if(msFirstClick) {
+        } else if (e.button === 0) { // left click
+          if (cell.textContent === '🚩' || cell.classList.contains('revealed')) return;
+          if (msFirstClick) {
             placeMines(x, y);
             msFirstClick = false;
             msTimer = setInterval(() => {
@@ -2027,30 +2027,30 @@ function initMinesweeper() {
       boardEl.appendChild(cell);
     }
   }
-  
+
   // Disable default context menu in minesweeper board
   boardEl.oncontextmenu = (e) => e.preventDefault();
 }
 
 function placeMines(firstX, firstY) {
   let placed = 0;
-  while(placed < msMines) {
+  while (placed < msMines) {
     let rx = Math.floor(Math.random() * msW);
     let ry = Math.floor(Math.random() * msH);
-    if(msBoard[ry][rx] !== 'M' && !(rx === firstX && ry === firstY)) {
+    if (msBoard[ry][rx] !== 'M' && !(rx === firstX && ry === firstY)) {
       msBoard[ry][rx] = 'M';
       placed++;
     }
   }
-  
-  for(let y = 0; y < msH; y++) {
-    for(let x = 0; x < msW; x++) {
-      if(msBoard[y][x] === 'M') continue;
+
+  for (let y = 0; y < msH; y++) {
+    for (let x = 0; x < msW; x++) {
+      if (msBoard[y][x] === 'M') continue;
       let c = 0;
-      for(let dy = -1; dy <= 1; dy++) {
-        for(let dx = -1; dx <= 1; dx++) {
-          if(y+dy >= 0 && y+dy < msH && x+dx >= 0 && x+dx < msW) {
-            if(msBoard[y+dy][x+dx] === 'M') c++;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (y + dy >= 0 && y + dy < msH && x + dx >= 0 && x + dx < msW) {
+            if (msBoard[y + dy][x + dx] === 'M') c++;
           }
         }
       }
@@ -2061,26 +2061,26 @@ function placeMines(firstX, firstY) {
 
 function revealCell(x, y) {
   const cell = document.querySelector(`.ms-cell[data-x="${x}"][data-y="${y}"]`);
-  if(!cell || cell.classList.contains('revealed') || cell.textContent === '🚩') return;
-  
+  if (!cell || cell.classList.contains('revealed') || cell.textContent === '🚩') return;
+
   cell.classList.add('revealed');
   msRevealed++;
-  
-  if(msBoard[y][x] === 'M') {
+
+  if (msBoard[y][x] === 'M') {
     cell.classList.add('mine');
     cell.textContent = '💣';
     gameOver(false);
     return;
   }
-  
-  if(msBoard[y][x] > 0) {
+
+  if (msBoard[y][x] > 0) {
     cell.textContent = msBoard[y][x];
     cell.dataset.val = msBoard[y][x];
   } else {
-    for(let dy = -1; dy <= 1; dy++) {
-      for(let dx = -1; dx <= 1; dx++) {
-        if(y+dy >= 0 && y+dy < msH && x+dx >= 0 && x+dx < msW) {
-          revealCell(x+dx, y+dy);
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (y + dy >= 0 && y + dy < msH && x + dx >= 0 && x + dx < msW) {
+          revealCell(x + dx, y + dy);
         }
       }
     }
@@ -2088,7 +2088,7 @@ function revealCell(x, y) {
 }
 
 function checkWin() {
-  if(msRevealed === msW * msH - msMines) {
+  if (msRevealed === msW * msH - msMines) {
     gameOver(true);
   }
 }
@@ -2097,14 +2097,14 @@ function gameOver(win) {
   msGameOver = true;
   clearInterval(msTimer);
   document.getElementById('ms-face').textContent = win ? "😎" : "😵";
-  
+
   // Reveal all mines if lost
-  if(!win) {
-    for(let y = 0; y < msH; y++) {
-      for(let x = 0; x < msW; x++) {
-        if(msBoard[y][x] === 'M') {
+  if (!win) {
+    for (let y = 0; y < msH; y++) {
+      for (let x = 0; x < msW; x++) {
+        if (msBoard[y][x] === 'M') {
           const cell = document.querySelector(`.ms-cell[data-x="${x}"][data-y="${y}"]`);
-          if(cell.textContent !== '🚩') {
+          if (cell.textContent !== '🚩') {
             cell.classList.add('revealed');
             cell.textContent = '💣';
           }
@@ -2114,11 +2114,11 @@ function gameOver(win) {
   } else {
     // Flag all remaining mines
     document.getElementById('ms-mines-count').textContent = "000";
-    for(let y = 0; y < msH; y++) {
-      for(let x = 0; x < msW; x++) {
-        if(msBoard[y][x] === 'M') {
+    for (let y = 0; y < msH; y++) {
+      for (let x = 0; x < msW; x++) {
+        if (msBoard[y][x] === 'M') {
           const cell = document.querySelector(`.ms-cell[data-x="${x}"][data-y="${y}"]`);
-          if(cell.textContent !== '🚩') cell.textContent = '🚩';
+          if (cell.textContent !== '🚩') cell.textContent = '🚩';
         }
       }
     }
@@ -2129,7 +2129,7 @@ function gameOver(win) {
 function inviteToChess(username) {
   const names = [myUsername, username].sort();
   const roomName = `chess-${names[0]}-${names[1]}`;
-  
+
   apiPost('/rooms', { name: roomName, topic: 'Chess Match', buddies_only: false, invite_only: true }, true)
     .catch(e => { /* Ignore if exists */ })
     .finally(() => {
@@ -2141,20 +2141,38 @@ function inviteToChess(username) {
 function initChessBoard(roomName) {
   const boardEl = document.getElementById(`chess-board-${roomName}`);
   const chess = new Chess();
-  
+
   const names = roomName.replace('chess-', '').split('-');
   const whitePlayer = names[0];
   const blackPlayer = names[1];
   const myColor = (myUsername === whitePlayer) ? 'w' : (myUsername === blackPlayer ? 'b' : null);
 
-  const pieceMap = {
-    'p': { 'w': '♙', 'b': '♟' },
-    'n': { 'w': '♘', 'b': '♞' },
-    'b': { 'w': '♗', 'b': '♝' },
-    'r': { 'w': '♖', 'b': '♜' },
-    'q': { 'w': '♕', 'b': '♛' },
-    'k': { 'w': '♔', 'b': '♚' }
-  };
+  const CHESS_PATH = 'src/chess/';
+  // Maps chess.js piece type + color → image filename
+  function pieceImg(type, color) {
+    const colorName = color === 'w' ? 'white' : 'black';
+    const typeMap = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
+    return `${CHESS_PATH}${typeMap[type]}_${colorName}.png`;
+  }
+
+  const CELL = 36; // px per square — 8×36 = 288px board
+  boardEl.style.width = `${CELL * 8}px`;
+  boardEl.style.height = `${CELL * 8}px`;
+  boardEl.style.display = 'grid';
+  boardEl.style.gridTemplateColumns = `repeat(8, ${CELL}px)`;
+  boardEl.style.gridTemplateRows = `repeat(8, ${CELL}px)`;
+  boardEl.style.border = '2px inset #fff';
+  boardEl.style.flexShrink = '0';
+
+  // Also widen the chess container to fit
+  const container = boardEl.closest('.chess-container');
+  if (container) {
+    container.style.width = `${CELL * 8 + 20}px`;
+  }
+
+  // Widen the whole room window
+  const winEl = boardEl.closest('.room-window');
+  if (winEl) winEl.style.width = '720px';
 
   let selectedSquare = null;
 
@@ -2163,7 +2181,6 @@ function initChessBoard(roomName) {
     const boardState = chess.board();
     const isFlipped = myColor === 'b';
 
-    // Compute legal move targets for selected square
     let legalTargets = new Set();
     if (selectedSquare) {
       chess.moves({ square: selectedSquare, verbose: true }).forEach(m => legalTargets.add(m.to));
@@ -2171,57 +2188,44 @@ function initChessBoard(roomName) {
 
     for (let r = 0; r < 8; r++) {
       for (let c = 0; c < 8; c++) {
-        const sq = document.createElement('div');
         const visualR = isFlipped ? 7 - r : r;
         const visualC = isFlipped ? 7 - c : c;
-        
-        const isDark = (visualR + visualC) % 2 === 1;
-        let bgColor = isDark ? '#769656' : '#eeeed2';
         const squareName = String.fromCharCode(97 + visualC) + (8 - visualR);
+        const isDark = (visualR + visualC) % 2 === 1;
 
-        if (selectedSquare === squareName) {
-          bgColor = '#f6f669';
-        } else if (legalTargets.has(squareName)) {
-          bgColor = isDark ? '#b3c56a' : '#cdd45e';
-        }
+        let bg = isDark ? '#769656' : '#eeeed2';
+        if (selectedSquare === squareName) bg = '#f6f669';
+        else if (legalTargets.has(squareName)) bg = isDark ? '#b3c56a' : '#cdd45e';
 
-        sq.style.backgroundColor = bgColor;
-        sq.style.display = 'flex';
-        sq.style.alignItems = 'center';
-        sq.style.justifyContent = 'center';
-        sq.style.fontSize = '22px';
-        sq.style.cursor = 'pointer';
-        sq.style.userSelect = 'none';
-        sq.style.position = 'relative';
+        const sq = document.createElement('div');
+        sq.style.cssText = `
+          width:${CELL}px; height:${CELL}px;
+          background:${bg};
+          display:flex; align-items:center; justify-content:center;
+          cursor:pointer; position:relative; user-select:none;
+        `;
 
         const piece = boardState[visualR][visualC];
         if (piece) {
-          const span = document.createElement('span');
-          span.textContent = pieceMap[piece.type][piece.color];
-          sq.appendChild(span);
-        }
-
-        // Dot indicator for legal move targets with no piece
-        if (legalTargets.has(squareName) && !piece) {
+          const img = document.createElement('img');
+          img.src = pieceImg(piece.type, piece.color);
+          img.style.cssText = `width:${CELL - 4}px; height:${CELL - 4}px; image-rendering:pixelated; pointer-events:none;`;
+          sq.appendChild(img);
+        } else if (legalTargets.has(squareName)) {
           const dot = document.createElement('div');
-          dot.style.cssText = 'width:8px;height:8px;border-radius:50%;background:rgba(0,0,0,0.25);position:absolute;pointer-events:none';
+          dot.style.cssText = `width:10px;height:10px;border-radius:50%;background:rgba(0,0,0,0.22);position:absolute;pointer-events:none`;
           sq.appendChild(dot);
         }
 
         sq.addEventListener('mousedown', () => {
           if (!myColor || chess.turn() !== myColor) return;
-
           if (selectedSquare) {
             if (selectedSquare !== squareName) {
-              const moves = chess.moves({ square: selectedSquare, verbose: true });
-              const move = moves.find(m => m.to === squareName);
+              const move = chess.moves({ square: selectedSquare, verbose: true }).find(m => m.to === squareName);
               if (move) {
-                 const promotion = move.flags.includes('p') ? 'q' : undefined;
-                 // Apply move locally immediately for instant feedback
-                 chess.move({ from: selectedSquare, to: squareName, promotion });
-                 // Send to server so opponent sees it (server will echo back with isEcho=true, which we skip)
-                 const moveMsg = `__CHESS_MOVE__:${JSON.stringify({ from: selectedSquare, to: squareName, promotion })}`;
-                 wsSend({ type: 'room_message', room: roomName, content: moveMsg });
+                const promotion = move.flags.includes('p') ? 'q' : undefined;
+                chess.move({ from: selectedSquare, to: squareName, promotion });
+                wsSend({ type: 'room_message', room: roomName, content: `__CHESS_MOVE__:${JSON.stringify({ from: selectedSquare, to: squareName, promotion })}` });
               }
             }
             selectedSquare = null;
@@ -2233,11 +2237,11 @@ function initChessBoard(roomName) {
             }
           }
         });
-        
+
         boardEl.appendChild(sq);
       }
     }
-    // Update status line
+
     const statusEl = document.getElementById(`chess-status-${roomName}`);
     if (statusEl) {
       if (chess.game_over()) {
@@ -2247,20 +2251,17 @@ function initChessBoard(roomName) {
         statusEl.style.color = '#800000';
       } else {
         const turn = chess.turn() === 'w' ? 'White' : 'Black';
-        const inCheck = chess.in_check();
-        statusEl.textContent = inCheck ? `${turn} to move — CHECK!` : `${turn} to move`;
-        statusEl.style.color = inCheck ? '#cc0000' : '#000080';
+        const check = chess.in_check();
+        statusEl.textContent = check ? `${turn} to move — CHECK!` : `${turn} to move`;
+        statusEl.style.color = check ? '#cc0000' : '#000080';
       }
     }
   }
-  
+
   renderBoard();
-  
+
   if (!window.chessGames) window.chessGames = {};
-  window.chessGames[roomName] = {
-    chess: chess,
-    render: renderBoard
-  };
+  window.chessGames[roomName] = { chess, render: renderBoard };
 
   document.getElementById(`chess-reset-${roomName}`).addEventListener('click', () => {
     wsSend({ type: 'room_message', room: roomName, content: '__CHESS_RESET__' });
