@@ -1,6 +1,6 @@
 // cIM — commodore. Instant Messenger
 
-const API = 'http://100.102.48.100/cim';
+const API = 'https://inspire.tail0e8d21.ts.net/cim';
 const EMOJI_PATH = 'src/emojis/';
 
 // ── State ──────────────────────────────────────────────────────────────────
